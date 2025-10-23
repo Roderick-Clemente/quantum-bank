@@ -5,8 +5,13 @@ from splitio import get_factory
 from splitio.exceptions import TimeoutException
 import os
 
-# Split.io API key - in production, use environment variable
-SPLIT_API_KEY = os.environ.get('SPLIT_API_KEY', 'p9prhm1rd5ge24k7no0e51l00o4cba9p1knp')
+# Split.io API key - loaded from environment variable
+# Make sure to set SPLIT_API_KEY in your .env file
+SPLIT_API_KEY = os.environ.get('SPLIT_API_KEY')
+
+if not SPLIT_API_KEY:
+    print("⚠ WARNING: SPLIT_API_KEY not found in environment variables!")
+    print("   Please set it in your .env file or environment")
 
 # Initialize Split.io factory
 split_factory = None

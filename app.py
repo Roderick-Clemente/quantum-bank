@@ -9,6 +9,8 @@ load_dotenv()
 
 from api.hello import handle_hello
 from api.home import handle_home
+from api.home_content import handle_home_content
+from api.home_static import handle_old_home_static, handle_new_home_static
 from api.time import handle_time
 from api.about import handle_about
 from api.four_o_four import handle_404
@@ -62,6 +64,21 @@ def home():
     REQUEST_COUNT.labels('GET', '/', 200).inc()
     REQUEST_LATENCY.labels('GET', '/').observe(t.time() - start_time)
     return handle_home()
+
+@app.route('/api/home-content')
+def home_content():
+    start_time = t.time()
+    REQUEST_COUNT.labels('GET', '/api/home-content', 200).inc()
+    REQUEST_LATENCY.labels('GET', '/api/home-content').observe(t.time() - start_time)
+    return handle_home_content()
+
+@app.route('/old-home-static')
+def old_home_static():
+    return handle_old_home_static()
+
+@app.route('/new-home-static')
+def new_home_static():
+    return handle_new_home_static()
 
 @app.route('/hello')
 def hello():

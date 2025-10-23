@@ -27,9 +27,9 @@
                 <div class="account-type">{{ account.account_type|title }} Account</div>
                 <div class="account-balance">
                     {% if account.account_type == 'credit' %}
-                        -${{ "%.2f"|format(account.balance|abs) }}
+                        -${{ account.balance|abs|currency }}
                     {% else %}
-                        ${{ "%.2f"|format(account.balance) }}
+                        ${{ account.balance|currency }}
                     {% endif %}
                 </div>
                 <div class="account-number">{{ account.account_number }}</div>
@@ -81,7 +81,7 @@
                         </div>
                     </div>
                     <div class="transaction-amount {% if trans.amount > 0 %}positive{% else %}negative{% endif %}">
-                        {% if trans.amount > 0 %}+{% endif %}${{ "%.2f"|format(trans.amount) }}
+                        {% if trans.amount > 0 %}+{% endif %}${{ trans.amount|abs|currency }}
                     </div>
                 </li>
                 {% endfor %}

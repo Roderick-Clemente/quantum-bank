@@ -44,7 +44,7 @@
                         <option value="">Select source account</option>
                         {% for account in accounts %}
                         <option value="{{ account.id }}">
-                            {{ account.account_type|title }} - {{ account.account_number }} (${{ "%.2f"|format(account.balance) }})
+                            {{ account.account_type|title }} - {{ account.account_number }} (${{ account.balance|currency }})
                         </option>
                         {% endfor %}
                     </select>

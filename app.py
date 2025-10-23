@@ -21,6 +21,12 @@ import time as t
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'quantum-bank-secret-key-change-in-production')
 
+# Custom Jinja2 filter for currency formatting
+@app.template_filter('currency')
+def currency_filter(value):
+    """Format number as currency with commas and 2 decimal places"""
+    return "{:,.2f}".format(float(value))
+
 # Initialize database
 init_db()
 

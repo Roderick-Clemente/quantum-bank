@@ -40,7 +40,7 @@
                         </div>
                     </div>
                     <div class="transaction-amount {% if trans.amount > 0 %}positive{% else %}negative{% endif %}">
-                        {% if trans.amount > 0 %}+{% endif %}${{ "%.2f"|format(trans.amount) }}
+                        {% if trans.amount > 0 %}+{% endif %}${{ trans.amount|abs|currency }}
                     </div>
                 </li>
                 {% endfor %}

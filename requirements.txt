@@ -12,5 +12,6 @@ pluggy==1.4.0
 prometheus_client==0.20.0
 pytest==8.1.1
 six==1.16.0
+splitio-client==10.5.1
 tomli==2.0.1
 Werkzeug==3.0.3

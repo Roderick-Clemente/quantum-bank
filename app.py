@@ -15,8 +15,10 @@ from api.transfer import handle_transfer, handle_api_transfer
 from api.transactions import handle_transactions
 from api.api_endpoints import handle_api_accounts, handle_api_transactions, handle_api_account_detail
 from models import init_db
+from split_config import init_split, destroy_split
 
 import time as t
+import atexit
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'quantum-bank-secret-key-change-in-production')
@@ -29,6 +31,12 @@ def currency_filter(value):
 
 # Initialize database
 init_db()
+
+# Initialize Split.io
+init_split()
+
+# Clean up Split.io on app shutdown
+atexit.register(destroy_split)
 
 app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
     '/metrics': make_wsgi_app()

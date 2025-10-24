@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quantum Bank - Developer-First Banking</title>
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logos/favicon-32x32.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logos/apple-touch-icon.svg') }}">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -325,7 +330,9 @@
 <body>
   <header>
     <nav class="container">
-      <div class="logo">⚛️ Quantum Bank</div>
+      <a href="/" class="logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <img src="{{ url_for('static', filename='images/logos/quantum-bank-logo-white.svg') }}" alt="Quantum Bank" style="height: 40px;">
+      </a>
       <ul class="nav-links">
         <li><a href="#features">Features</a></li>
         <li><a href="#docs">API Docs</a></li>

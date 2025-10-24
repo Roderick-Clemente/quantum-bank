@@ -10,7 +10,7 @@ load_dotenv()
 from api.hello import handle_hello
 from api.home import handle_home
 from api.home_content import handle_home_content
-from api.home_static import handle_old_home_static, handle_new_home_static
+from api.home_static import handle_old_home_static, handle_new_home_static, handle_v3_home_static
 from api.time import handle_time
 from api.about import handle_about
 from api.four_o_four import handle_404
@@ -79,6 +79,10 @@ def old_home_static():
 @app.route('/new-home-static')
 def new_home_static():
     return handle_new_home_static()
+
+@app.route('/v3-home-static')
+def v3_home_static():
+    return handle_v3_home_static()
 
 @app.route('/hello')
 def hello():

@@ -36,8 +36,9 @@ function showVariant(treatment) {
     // Show the correct variant
     const newHomeVariant = document.getElementById('new-home-variant');
     const oldHomeVariant = document.getElementById('old-home-variant');
+    const v3HomeVariant = document.getElementById('v3-home-variant');
 
-    if (!newHomeVariant || !oldHomeVariant) {
+    if (!newHomeVariant || !oldHomeVariant || !v3HomeVariant) {
         console.error('[Split.io] Variant elements not found in DOM!');
         return;
     }
@@ -45,6 +46,9 @@ function showVariant(treatment) {
     if (treatment === 'old_home') {
         oldHomeVariant.classList.add('active');
         console.log('[Split.io] ✅ Showing OLD home page');
+    } else if (treatment === 'dev_home') {
+        v3HomeVariant.classList.add('active');
+        console.log('[Split.io] ✅ Showing DEV developer-focused home page');
     } else {
         // Default to new_home for 'new_home', 'control', or any other treatment
         newHomeVariant.classList.add('active');

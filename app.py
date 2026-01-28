@@ -64,7 +64,10 @@ REQUEST_LATENCY = Histogram(
 def demo():
     """Demo entry point - forces demo mode ON"""
     # Store entry path in session for subsequent requests
-    session['entry_path'] = '/demo'
+    try:
+        session['entry_path'] = '/demo'
+    except Exception as e:
+        print(f"[Demo] Warning: Could not set session: {e}")
     start_time = t.time()
     REQUEST_COUNT.labels('GET', '/demo', 200).inc()
     REQUEST_LATENCY.labels('GET', '/demo').observe(t.time() - start_time)
@@ -73,7 +76,10 @@ def demo():
 @app.route('/')
 def home():
     # Store entry path in session
-    session['entry_path'] = request.path
+    try:
+        session['entry_path'] = request.path
+    except Exception as e:
+        print(f"[Home] Warning: Could not set session: {e}")
     start_time = t.time()
     REQUEST_COUNT.labels('GET', '/', 200).inc()
     REQUEST_LATENCY.labels('GET', '/').observe(t.time() - start_time)

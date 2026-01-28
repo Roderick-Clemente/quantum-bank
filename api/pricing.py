@@ -60,7 +60,11 @@ def handle_pricing():
     
     user_key = request.remote_addr or 'anonymous'
     # Check session for entry path, or use current path
-    entry_path = session.get('entry_path', request.path)
+    try:
+        entry_path = session.get('entry_path', request.path)
+    except Exception as e:
+        print(f"[Pricing] Warning: Could not access session: {e}, using request.path")
+        entry_path = request.path
     demo_mode_enabled = is_demo_mode(user_key, entry_path)
     print(f"[Pricing] DEMO_MODE check -> {demo_mode_enabled}")
     

@@ -26,10 +26,10 @@ def is_demo_mode(user_key=None, entry_path=None):
             # Build user attributes for Split.io targeting
             attributes = {}
             if entry_path:
-                attributes['entry_path'] = entry_path
+                attributes['url-entry'] = entry_path  # Match Split.io targeting rule attribute name
             
             treatment = split_client.get_treatment(user_key, 'demo_mode', attributes=attributes if attributes else None)
-            print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment} (user: {user_key}, entry_path: {entry_path})")
+            print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment} (user: {user_key}, url-entry: {entry_path})")
             
             # Explicit treatments
             if treatment in ('on', 'true', '1', 'yes'):

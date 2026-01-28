@@ -30,28 +30,28 @@
     /* Demo Mode Indicator */
     .demo-mode-badge {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      bottom: 20px;
+      left: 20px;
       background: linear-gradient(135deg, #605dba 0%, #4f4ca8 100%);
       color: #fff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
+      padding: 5px 11px;
+      border-radius: 14px;
+      font-size: 8px;
       font-weight: 600;
       z-index: 9999;
-      box-shadow: 0 4px 12px rgba(96, 93, 186, 0.3);
+      box-shadow: 0 3px 8px rgba(96, 93, 186, 0.3);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       font-family: 'Manrope', sans-serif;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       animation: pulse 2s ease-in-out infinite;
       pointer-events: none;
     }
 
     .demo-mode-badge::before {
       content: '⚡';
-      font-size: 14px;
+      font-size: 9px;
     }
 
     @keyframes pulse {
@@ -67,10 +67,10 @@
 
     @media (max-width: 768px) {
       .demo-mode-badge {
-        top: 10px;
-        right: 10px;
-        padding: 6px 12px;
-        font-size: 11px;
+        bottom: 10px;
+        left: 10px;
+        padding: 4px 8px;
+        font-size: 7px;
       }
     }
   </style>

@@ -11,7 +11,10 @@ def is_demo_mode():
 def handle_pricing():
     """Handle pricing page - renders wrapper or single variant based on demo mode"""
     
-    if is_demo_mode():
+    demo_mode_enabled = is_demo_mode()
+    print(f"[Pricing] DEMO_MODE check: {os.environ.get('DEMO_MODE', 'not set')} -> {demo_mode_enabled}")
+    
+    if demo_mode_enabled:
         # Demo mode: Pre-load all variants as iframes for instant switching
         return render_template('pricing_wrapper.html', demo_mode=True)
     else:

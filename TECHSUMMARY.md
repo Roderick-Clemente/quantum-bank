@@ -289,6 +289,9 @@ const SPLIT_CLIENT_KEY = '5lra47f9qtsf0dcrgcdur3k5sjhfblck0l67';
 - Auto-deploys from GitHub `main` branch
 - Uses `render.yaml` for service configuration
 - Environment variables set in Render dashboard
+- **Important:** With `runtime: docker`, Render uses the Dockerfile for build/start commands
+  - `buildCommand` and `startCommand` in `render.yaml` are ignored when using Docker runtime
+  - All build/start logic is in `Dockerfile` instead
 
 **Database Persistence:**
 - ⚠️ **Free tier:** SQLite database resets on deploys/restarts

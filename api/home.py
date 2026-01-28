@@ -6,21 +6,32 @@ def is_demo_mode(user_key=None):
     """Check if demo mode is enabled (instant switching with iframes)
     
     Checks Split.io flag 'demo_mode' first, then falls back to DEMO_MODE env var.
+    Handles Split.io SDK initialization timing gracefully.
     """
     # First, try Split.io flag
     split_client = get_split_client()
     if split_client and user_key:
-        treatment = split_client.get_treatment(user_key, 'demo_mode')
-        print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment}")
-        if treatment in ('on', 'true', '1', 'yes'):
-            return True
-        elif treatment in ('off', 'false', '0', 'no'):
-            return False
-        # If treatment is 'control' or unknown, fall through to env var
+        try:
+            treatment = split_client.get_treatment(user_key, 'demo_mode')
+            print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment}")
+            
+            # Explicit treatments
+            if treatment in ('on', 'true', '1', 'yes'):
+                return True
+            elif treatment in ('off', 'false', '0', 'no'):
+                return False
+            # If treatment is 'control' or unknown, Split.io isn't configured or SDK not ready
+            # Fall through to env var as safe default
+            elif treatment == 'control':
+                print(f"[Demo Mode] Split.io returned 'control' - flag may not be configured, using env var")
+            else:
+                print(f"[Demo Mode] Split.io returned unknown treatment '{treatment}' - using env var")
+        except Exception as e:
+            print(f"[Demo Mode] Error getting Split.io treatment: {e} - using env var")
     
-    # Fallback to environment variable
+    # Fallback to environment variable (safe default)
     demo_mode = os.environ.get('DEMO_MODE', 'on').lower()
-    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode}")
+    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: 'on')")
     return demo_mode in ('true', '1', 'yes', 'on')
 
 def handle_home():

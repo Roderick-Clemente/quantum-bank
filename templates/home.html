@@ -29,7 +29,7 @@
   </style>
 </head>
 
-<body class="!bg-[#f0f0f8]">
+<body class="!bg-[#f0f0f8]" data-variant="new_home" data-testid="home-variant-new">
   <div class="grow shrink-0">
     <header class="!absolute w-full">
       <div class="gradient-5 text-white font-bold !text-[.75rem] mb-2 !relative" style="z-index: 1;">
@@ -72,7 +72,7 @@
                   <ul class="dropdown-menu mega-menu mega-menu-dark mega-menu-img"></ul>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link font-bold tracking-[-0.01rem] hover:!text-[#605dba]" href="/login">Login</a>
+                  <a class="nav-link font-bold tracking-[-0.01rem] hover:!text-[#605dba]" href="/login" data-testid="nav-signin">Sign In</a>
                 </li>
               </ul>
               <!-- /.navbar-nav -->
@@ -133,8 +133,8 @@
               <p class="lead !text-[1.2rem] !leading-[1.6] !mb-8">We provide innovative solutions, expert consulting, cloud services, and comprehensive security.</p>
             </div>
             <div class="flex justify-center" data-cues="slideInDown" data-delay="600">
-              <span><a class="btn btn-lg btn-grape text-white !bg-[#605dba] border-[#605dba] hover:text-white hover:bg-[#605dba] hover:border-[#605dba] focus:shadow-[rgba(92,140,229,1)] active:text-white active:bg-[#605dba] active:border-[#605dba] disabled:text-white disabled:bg-[#605dba] disabled:border-[#605dba] !rounded-[0.8rem] mx-1">See Projects</a></span>
-              <span><a class="btn btn-lg text-white bg-[#dadce0] border-[#e668b3] hover:text-white hover:bg-[#e668b3] hover:border-[#e668b3] focus:shadow-[rgba(92,140,229,1)] active:text-white active:bg-[#e668b3] active:border-[#e668b3] disabled:text-white disabled:bg-[#e668b3] disabled:border-[#e668b3] !rounded-[0.8rem] mx-1">Contact Us</a></span>
+              <span><a class="btn btn-lg btn-grape text-white !bg-[#605dba] border-[#605dba] hover:text-white hover:bg-[#605dba] hover:border-[#605dba] focus:shadow-[rgba(92,140,229,1)] active:text-white active:bg-[#605dba] active:border-[#605dba] disabled:text-white disabled:bg-[#605dba] disabled:border-[#605dba] !rounded-[0.8rem] mx-1" data-testid="hero-cta-primary">Get Started</a></span>
+              <span><a class="btn btn-lg text-white bg-[#dadce0] border-[#e668b3] hover:text-white hover:bg-[#e668b3] hover:border-[#e668b3] focus:shadow-[rgba(92,140,229,1)] active:text-white active:bg-[#e668b3] active:border-[#e668b3] disabled:text-white disabled:bg-[#e668b3] disabled:border-[#e668b3] !rounded-[0.8rem] mx-1" data-testid="hero-cta-secondary">Contact Us</a></span>
             </div>
             <!-- /div -->
           </div>

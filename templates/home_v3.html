@@ -327,7 +327,7 @@
     }
   </style>
 </head>
-<body>
+<body data-variant="dev_home" data-testid="home-variant-dev">
   <header>
     <nav class="container">
       <a href="/" class="logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
@@ -337,9 +337,9 @@
         <li><a href="#features">Features</a></li>
         <li><a href="#docs">API Docs</a></li>
         <li><a href="/pricing">Pricing</a></li>
-        <li><a href="/login">Login</a></li>
+        <li><a href="/login" data-testid="nav-login">Login</a></li>
       </ul>
-      <a href="/login" class="btn btn-primary">Get Started</a>
+      <a href="/login" class="btn btn-primary" data-testid="nav-cta">Get Started</a>
     </nav>
   </header>
 
@@ -349,7 +349,7 @@
       <p>Modern banking infrastructure with powerful APIs, CLI tools, and native integrations. Build financial products in minutes, not months.</p>
 
       <div class="hero-cta">
-        <a href="/login" class="btn btn-primary">Start Building</a>
+        <a href="/login" class="btn btn-primary" data-testid="hero-cta-primary">Start Building</a>
         <a href="#docs" class="btn btn-secondary">View Docs</a>
       </div>
 

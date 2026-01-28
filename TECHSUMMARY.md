@@ -18,7 +18,7 @@ Quantum Bank is a Flask-based banking demo application designed to showcase Spli
 
 ### Demo Mode vs Traditional Mode
 
-The application supports **two modes** controlled by the `DEMO_MODE` environment variable:
+The application supports **two modes** controlled by a **Split.io flag** `demo_mode` (with fallback to `DEMO_MODE` environment variable):
 
 #### Demo Mode ON (Default: `DEMO_MODE=true`)
 - **Purpose:** Showcase instant flag switching for FME (Feature Management Experience) demos
@@ -34,13 +34,22 @@ The application supports **two modes** controlled by the `DEMO_MODE` environment
 - **Trade-off:** Requires page refresh to see flag changes, but cleaner for testing
 
 **Configuration:**
+
+**Primary: Split.io Flag** (recommended)
+- Create a Split.io flag called `demo_mode`
+- Treatments: `on` (demo mode) or `off` (traditional mode)
+- Control via Split.io dashboard - no server restart needed!
+
+**Fallback: Environment Variable**
 ```bash
 # Demo mode (instant switching)
-DEMO_MODE=true
+DEMO_MODE=on
 
 # Traditional mode (server-side only)
-DEMO_MODE=false
+DEMO_MODE=off
 ```
+
+**Priority:** Split.io flag takes precedence, falls back to env var if flag not set or unavailable.
 
 ### Dual SDK Pattern (Non-Standard Approach)
 

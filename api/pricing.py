@@ -2,17 +2,35 @@ from flask import render_template, request
 from split_config import get_split_client
 import os
 
-def is_demo_mode():
-    """Check if demo mode is enabled (instant switching with iframes)"""
-    # Default to 'on' for demo/showcase purposes
+def is_demo_mode(user_key=None):
+    """Check if demo mode is enabled (instant switching with iframes)
+    
+    Checks Split.io flag 'demo_mode' first, then falls back to DEMO_MODE env var.
+    """
+    from split_config import get_split_client
+    
+    # First, try Split.io flag
+    split_client = get_split_client()
+    if split_client and user_key:
+        treatment = split_client.get_treatment(user_key, 'demo_mode')
+        print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment}")
+        if treatment in ('on', 'true', '1', 'yes'):
+            return True
+        elif treatment in ('off', 'false', '0', 'no'):
+            return False
+        # If treatment is 'control' or unknown, fall through to env var
+    
+    # Fallback to environment variable
     demo_mode = os.environ.get('DEMO_MODE', 'on').lower()
+    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode}")
     return demo_mode in ('true', '1', 'yes', 'on')
 
 def handle_pricing():
     """Handle pricing page - renders wrapper or single variant based on demo mode"""
     
-    demo_mode_enabled = is_demo_mode()
-    print(f"[Pricing] DEMO_MODE check: {os.environ.get('DEMO_MODE', 'not set')} -> {demo_mode_enabled}")
+    user_key = request.remote_addr or 'anonymous'
+    demo_mode_enabled = is_demo_mode(user_key)
+    print(f"[Pricing] DEMO_MODE check -> {demo_mode_enabled}")
     
     if demo_mode_enabled:
         # Demo mode: Pre-load all variants as iframes for instant switching

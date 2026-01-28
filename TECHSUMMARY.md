@@ -25,6 +25,7 @@ The application supports **two modes** controlled by the `DEMO_MODE` environment
 - **Behavior:** Pre-loads all variants as iframes, instant switching without refresh
 - **Use Case:** Live demos where you want to flip a flag and see immediate visual change
 - **Trade-off:** Higher initial load time, but wow factor for demos
+- **Visual Indicator:** Shows "⚡ DEMO MODE" badge in top-right corner when active
 
 #### Traditional Mode OFF (`DEMO_MODE=false`)
 - **Purpose:** Better for AI testing tools and isolated variant testing
@@ -116,6 +117,7 @@ home_page_variant = 'dev_home'  → home_v3.html + pricing_v3.html
 3. JavaScript shows/hides iframes via CSS class toggle (`.active`)
 4. When flag changes in dashboard, SDK detects update and instantly switches
 5. **No page refresh required** - instant visual feedback
+6. **Visual confirmation:** "⚡ DEMO MODE" badge appears in top-right corner
 
 ### Traditional Mode: Server-Side Rendering
 
@@ -263,6 +265,32 @@ const SPLIT_CLIENT_KEY = '5lra47f9qtsf0dcrgcdur3k5sjhfblck0l67';
 **Database Persistence:**
 - ⚠️ **Free tier:** SQLite database resets on deploys/restarts
 - For production: Consider PostgreSQL or persistent disk mount
+
+---
+
+## Demo Mode Visual Indicator
+
+### Badge Display
+
+When `DEMO_MODE=true`, a visual indicator badge appears in the top-right corner of the page:
+
+**Features:**
+- **Text:** "⚡ DEMO MODE" with lightning bolt icon
+- **Style:** Brand color gradient (#605dba), rounded pill shape
+- **Animation:** Subtle pulse effect (2s ease-in-out infinite)
+- **Position:** Fixed top-right (20px from edges, responsive on mobile)
+- **Z-index:** 9999 (always on top)
+- **Behavior:** Non-interactive (pointer-events: none)
+
+**Purpose:**
+- Confirms instant switching mode is active
+- Helps distinguish demo mode from traditional mode
+- Provides visual feedback during live demos
+
+**Implementation:**
+- Badge is conditionally rendered in wrapper templates (`home_wrapper.html`, `pricing_wrapper.html`)
+- Only displays when `demo_mode=True` is passed from handlers
+- Styled with CSS animations for subtle attention-grabbing effect
 
 ---
 

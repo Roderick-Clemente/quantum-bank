@@ -16,10 +16,12 @@ def handle_home():
     
     if demo_mode_enabled:
         # Demo mode: Pre-load all variants as iframes for instant switching
+        print(f"[Home] Rendering wrapper template (DEMO MODE ON)")
         return render_template('home_wrapper.html', demo_mode=True)
     else:
         # Traditional mode: Server-side rendering of single variant
         # Better for AI testing tools that need isolated variants
+        print(f"[Home] Rendering single template (DEMO MODE OFF - no badge)")
         split_client = get_split_client()
         template = 'home.html'  # Default
         
@@ -38,4 +40,5 @@ def handle_home():
         else:
             print("[Home] Traditional mode - Split.io unavailable, using default template")
         
-        return render_template(template)
+        # Explicitly pass demo_mode=False to ensure badge doesn't show
+        return render_template(template, demo_mode=False)

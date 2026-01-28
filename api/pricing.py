@@ -19,8 +19,10 @@ def is_demo_mode(user_key=None):
             
             # Explicit treatments
             if treatment in ('on', 'true', '1', 'yes'):
+                print(f"[Demo Mode] ✅ Split.io flag = ON -> Demo mode ENABLED")
                 return True
             elif treatment in ('off', 'false', '0', 'no'):
+                print(f"[Demo Mode] ❌ Split.io flag = OFF -> Demo mode DISABLED")
                 return False
             # If treatment is 'control' or unknown, Split.io isn't configured or SDK not ready
             # Fall through to env var as safe default
@@ -31,10 +33,11 @@ def is_demo_mode(user_key=None):
         except Exception as e:
             print(f"[Demo Mode] Error getting Split.io treatment: {e} - using env var")
     
-    # Fallback to environment variable (safe default)
-    demo_mode = os.environ.get('DEMO_MODE', 'on').lower()
-    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: 'on')")
-    return demo_mode in ('true', '1', 'yes', 'on')
+    # Fallback to environment variable (safe default: 'off' for AI testing)
+    demo_mode = os.environ.get('DEMO_MODE', 'off').lower()
+    result = demo_mode in ('true', '1', 'yes', 'on')
+    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: 'off') -> {result}")
+    return result
 
 def handle_pricing():
     """Handle pricing page - renders wrapper or single variant based on demo mode"""

@@ -20,18 +20,19 @@ Quantum Bank is a Flask-based banking demo application designed to showcase Spli
 
 The application supports **two modes** controlled by a **Split.io flag** `demo_mode` (with fallback to `DEMO_MODE` environment variable):
 
-#### Demo Mode ON (Default: `DEMO_MODE=true`)
+#### Demo Mode ON (Split.io flag `demo_mode=on` or `DEMO_MODE=on`)
 - **Purpose:** Showcase instant flag switching for FME (Feature Management Experience) demos
 - **Behavior:** Pre-loads all variants as iframes, instant switching without refresh
 - **Use Case:** Live demos where you want to flip a flag and see immediate visual change
 - **Trade-off:** Higher initial load time, but wow factor for demos
-- **Visual Indicator:** Shows "⚡ DEMO MODE" badge in top-right corner when active
+- **Visual Indicator:** Shows "⚡ DEMO MODE" badge in bottom-left corner when active
 
-#### Traditional Mode OFF (`DEMO_MODE=false`)
+#### Traditional Mode OFF (Default: Split.io flag `demo_mode=off` or `DEMO_MODE=off`)
 - **Purpose:** Better for AI testing tools and isolated variant testing
 - **Behavior:** Server-side rendering of single variant, no pre-loading
 - **Use Case:** AI test tools that need to test specific variants without iframe confusion
 - **Trade-off:** Requires page refresh to see flag changes, but cleaner for testing
+- **Default:** Traditional mode is the default (safer for AI testing)
 
 **Configuration:**
 
@@ -50,6 +51,11 @@ DEMO_MODE=off
 ```
 
 **Priority:** Split.io flag takes precedence, falls back to env var if flag not set or unavailable.
+
+**Default Behavior:**
+- Default is `off` (traditional mode) - safer for AI testing
+- If Split.io returns `'control'` (flag not configured or SDK not ready), falls back to env var
+- Console logs show exactly what's happening: `[Demo Mode] ✅ Split.io flag = ON` or `[Demo Mode] ❌ Split.io flag = OFF`
 
 ### Dual SDK Pattern (Non-Standard Approach)
 

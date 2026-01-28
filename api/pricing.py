@@ -12,8 +12,6 @@ def is_demo_mode(user_key=None, entry_path=None):
     
     Handles Split.io SDK initialization timing gracefully.
     """
-    from split_config import get_split_client
-    
     # Priority 1: Check if entry path contains 'demo'
     if entry_path and 'demo' in entry_path.lower():
         print(f"[Demo Mode] 🎯 Entry path contains 'demo' ({entry_path}) -> Demo mode FORCED ON")
@@ -24,11 +22,14 @@ def is_demo_mode(user_key=None, entry_path=None):
     if split_client and user_key:
         try:
             # Build user attributes for Split.io targeting
-            attributes = {}
+            attributes = None
             if entry_path:
-                attributes['url-entry'] = entry_path  # Match Split.io targeting rule attribute name
+                attributes = {'url-entry': entry_path}  # Match Split.io targeting rule attribute name
             
-            treatment = split_client.get_treatment(user_key, 'demo_mode', attributes=attributes if attributes else None)
+            if attributes:
+                treatment = split_client.get_treatment(user_key, 'demo_mode', attributes=attributes)
+            else:
+                treatment = split_client.get_treatment(user_key, 'demo_mode')
             print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment} (user: {user_key}, url-entry: {entry_path})")
             
             # Explicit treatments

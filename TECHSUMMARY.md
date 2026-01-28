@@ -16,6 +16,31 @@ Quantum Bank is a Flask-based banking demo application designed to showcase Spli
 
 ## Architecture Highlights
 
+### Demo Mode vs Traditional Mode
+
+The application supports **two modes** controlled by the `DEMO_MODE` environment variable:
+
+#### Demo Mode ON (Default: `DEMO_MODE=true`)
+- **Purpose:** Showcase instant flag switching for FME (Feature Management Experience) demos
+- **Behavior:** Pre-loads all variants as iframes, instant switching without refresh
+- **Use Case:** Live demos where you want to flip a flag and see immediate visual change
+- **Trade-off:** Higher initial load time, but wow factor for demos
+
+#### Traditional Mode OFF (`DEMO_MODE=false`)
+- **Purpose:** Better for AI testing tools and isolated variant testing
+- **Behavior:** Server-side rendering of single variant, no pre-loading
+- **Use Case:** AI test tools that need to test specific variants without iframe confusion
+- **Trade-off:** Requires page refresh to see flag changes, but cleaner for testing
+
+**Configuration:**
+```bash
+# Demo mode (instant switching)
+DEMO_MODE=true
+
+# Traditional mode (server-side only)
+DEMO_MODE=false
+```
+
 ### Dual SDK Pattern (Non-Standard Approach)
 
 **⚠️ IMPORTANT: This is a demo-specific implementation, not production best practice.**
@@ -24,11 +49,11 @@ The application uses a **hybrid approach** combining server-side and client-side
 
 1. **Server-Side SDK** (`split_config.py`):
    - Initializes Split.io factory on app startup
-   - Used for initial treatment evaluation (though not actively used in current routing)
+   - Used for treatment evaluation in both demo and traditional modes
    - Loads API key from `SPLIT_API_KEY` environment variable
 
 2. **Client-Side SDK** (`static/js/split-client.js`):
-   - Loaded from Split.io CDN in wrapper templates
+   - Loaded from Split.io CDN in wrapper templates (demo mode only)
    - Handles **real-time flag updates** without page refresh
    - Listens for `SDK_UPDATE` events and instantly switches variants
 
@@ -65,11 +90,11 @@ home_page_variant = 'dev_home'  → home_v3.html + pricing_v3.html
 
 ## Variant Switching Pattern
 
-### Wrapper Template Architecture
+### Demo Mode: Wrapper Template Architecture
 
-Both home and pricing pages use a **wrapper pattern** that pre-loads all variants:
+**When `DEMO_MODE=true` (default):** Both home and pricing pages use a **wrapper pattern** that pre-loads all variants:
 
-**Home Page Flow:**
+**Home Page Flow (Demo Mode):**
 ```
 / → home_wrapper.html
   ├── iframe: /old-home-static → old_home.html
@@ -77,7 +102,7 @@ Both home and pricing pages use a **wrapper pattern** that pre-loads all variant
   └── iframe: /v3-home-static → home_v3.html
 ```
 
-**Pricing Page Flow:**
+**Pricing Page Flow (Demo Mode):**
 ```
 /pricing → pricing_wrapper.html
   ├── iframe: /old-pricing-static → pricing_old.html
@@ -85,18 +110,44 @@ Both home and pricing pages use a **wrapper pattern** that pre-loads all variant
   └── iframe: /v3-pricing-static → pricing_v3.html
 ```
 
-**How It Works:**
+**How Demo Mode Works:**
 1. Wrapper loads all variants as hidden iframes (`display: none`)
 2. Client-side Split.io SDK evaluates treatment
 3. JavaScript shows/hides iframes via CSS class toggle (`.active`)
 4. When flag changes in dashboard, SDK detects update and instantly switches
+5. **No page refresh required** - instant visual feedback
+
+### Traditional Mode: Server-Side Rendering
+
+**When `DEMO_MODE=false`:** Pages render single variant server-side:
+
+**Home Page Flow (Traditional Mode):**
+```
+/ → api/home.py → checks Split.io → renders single template
+  - old_home.html OR home.html OR home_v3.html
+```
+
+**Pricing Page Flow (Traditional Mode):**
+```
+/pricing → api/pricing.py → checks Split.io → renders single template
+  - pricing_old.html OR pricing_v2.html OR pricing_v3.html
+```
+
+**How Traditional Mode Works:**
+1. Server evaluates Split.io flag server-side
+2. Renders only the selected variant template
+3. No iframes, no pre-loading
+4. **Requires page refresh** to see flag changes
+5. **Better for AI testing tools** - cleaner DOM, no iframe confusion
 
 **Files:**
-- `templates/home_wrapper.html` - Home page wrapper
-- `templates/pricing_wrapper.html` - Pricing page wrapper
-- `static/js/split-client.js` - Client-side flag logic
-- `api/home_static.py` - Static route handlers for home variants
-- `api/pricing_static.py` - Static route handlers for pricing variants
+- `templates/home_wrapper.html` - Home page wrapper (demo mode only)
+- `templates/pricing_wrapper.html` - Pricing page wrapper (demo mode only)
+- `static/js/split-client.js` - Client-side flag logic (demo mode only)
+- `api/home_static.py` - Static route handlers for home variants (demo mode)
+- `api/pricing_static.py` - Static route handlers for pricing variants (demo mode)
+- `api/home.py` - Home handler (checks DEMO_MODE, routes accordingly)
+- `api/pricing.py` - Pricing handler (checks DEMO_MODE, routes accordingly)
 
 ---
 
@@ -249,15 +300,21 @@ All variants include `data-testid` attributes for automated testing:
 - One flag (`home_page_variant`) controls both home and pricing
 - **Production:** Consider separate flags per page/feature
 
-### 3. Pre-loaded Variants
-- All variants load as iframes (higher initial load time)
+### 3. Pre-loaded Variants (Demo Mode Only)
+- In demo mode, all variants load as iframes (higher initial load time)
 - **Trade-off:** Instant switching vs. performance
+- **Solution:** Use `DEMO_MODE=false` for traditional server-side rendering
 
-### 4. Database Persistence
+### 4. AI Testing Tool Compatibility
+- Demo mode with iframes can confuse AI testing tools (they may navigate into iframes)
+- **Solution:** Set `DEMO_MODE=false` for isolated variant testing
+- Traditional mode renders single variant, no iframes, cleaner for automation
+
+### 5. Database Persistence
 - SQLite on free tier resets on deploy
 - **Production:** Use PostgreSQL or persistent storage
 
-### 5. Error Handling
+### 6. Error Handling
 - Graceful degradation if Split.io unavailable
 - Falls back to default variant (new_home)
 
@@ -271,6 +328,7 @@ All variants include `data-testid` attributes for automated testing:
    - Copy `.env.example` to `.env`
    - Add `SPLIT_API_KEY` from Split.io dashboard
    - Set `SECRET_KEY` for Flask sessions
+   - Set `DEMO_MODE=true` for instant switching (default) or `DEMO_MODE=false` for traditional mode
 
 2. **Split.io Configuration:**
    - Create `home_page_variant` split in Split.io dashboard
@@ -286,9 +344,14 @@ All variants include `data-testid` attributes for automated testing:
    ```
 
 4. **Testing Variants:**
-   - Visit `http://localhost:5001`
-   - Change flag in Split.io dashboard
-   - Verify instant switching (check browser console for logs)
+   - **Demo Mode (`DEMO_MODE=true`):**
+     - Visit `http://localhost:5001`
+     - Change flag in Split.io dashboard
+     - Verify instant switching without refresh (check browser console for logs)
+   - **Traditional Mode (`DEMO_MODE=false`):**
+     - Visit `http://localhost:5001`
+     - Change flag in Split.io dashboard
+     - Refresh page to see new variant (better for AI testing tools)
 
 5. **Adding New Variants:**
    - Create new template (e.g., `home_v4.html`)

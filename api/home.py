@@ -1,19 +1,33 @@
-from flask import render_template, request
+from flask import render_template, request, session
 from split_config import get_split_client
 import os
 
-def is_demo_mode(user_key=None):
+def is_demo_mode(user_key=None, entry_path=None):
     """Check if demo mode is enabled (instant switching with iframes)
     
-    Checks Split.io flag 'demo_mode' first, then falls back to DEMO_MODE env var.
+    Priority order:
+    1. URL path (/demo) - forces demo mode ON
+    2. Split.io flag 'demo_mode' with user attributes (entry_path)
+    3. DEMO_MODE env var (default: 'off')
+    
     Handles Split.io SDK initialization timing gracefully.
     """
-    # First, try Split.io flag
+    # Priority 1: Check if user came from /demo path
+    if entry_path == '/demo':
+        print(f"[Demo Mode] 🎯 Entry path '/demo' detected -> Demo mode FORCED ON")
+        return True
+    
+    # Priority 2: Try Split.io flag with user attributes
     split_client = get_split_client()
     if split_client and user_key:
         try:
-            treatment = split_client.get_treatment(user_key, 'demo_mode')
-            print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment}")
+            # Build user attributes for Split.io targeting
+            attributes = {}
+            if entry_path:
+                attributes['entry_path'] = entry_path
+            
+            treatment = split_client.get_treatment(user_key, 'demo_mode', attributes=attributes if attributes else None)
+            print(f"[Demo Mode] Split.io flag 'demo_mode' = {treatment} (user: {user_key}, entry_path: {entry_path})")
             
             # Explicit treatments
             if treatment in ('on', 'true', '1', 'yes'):
@@ -31,7 +45,7 @@ def is_demo_mode(user_key=None):
         except Exception as e:
             print(f"[Demo Mode] Error getting Split.io treatment: {e} - using env var")
     
-    # Fallback to environment variable (safe default: 'off' for AI testing)
+    # Priority 3: Fallback to environment variable (safe default: 'off' for AI testing)
     demo_mode = os.environ.get('DEMO_MODE', 'off').lower()
     result = demo_mode in ('true', '1', 'yes', 'on')
     print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: 'off') -> {result}")
@@ -41,7 +55,9 @@ def handle_home():
     """Handle home page - renders wrapper or single variant based on demo mode"""
     
     user_key = request.remote_addr or 'anonymous'
-    demo_mode_enabled = is_demo_mode(user_key)
+    # Check session for entry path (set by /demo route), or use current path
+    entry_path = session.get('entry_path', request.path)
+    demo_mode_enabled = is_demo_mode(user_key, entry_path)
     print(f"[Home] DEMO_MODE check -> {demo_mode_enabled}")
     
     if demo_mode_enabled:

@@ -27,32 +27,54 @@ function getUserKey() {
 function showVariant(treatment) {
     console.log('[Split.io] 🎨 Showing variant:', treatment);
 
-    // Hide all variants
-    const allVariants = document.querySelectorAll('.home-variant');
-    allVariants.forEach(variant => {
-        variant.classList.remove('active');
-    });
+    // Handle home page variants
+    const allHomeVariants = document.querySelectorAll('.home-variant');
+    if (allHomeVariants.length > 0) {
+        allHomeVariants.forEach(variant => {
+            variant.classList.remove('active');
+        });
 
-    // Show the correct variant
-    const newHomeVariant = document.getElementById('new-home-variant');
-    const oldHomeVariant = document.getElementById('old-home-variant');
-    const v3HomeVariant = document.getElementById('v3-home-variant');
+        const newHomeVariant = document.getElementById('new-home-variant');
+        const oldHomeVariant = document.getElementById('old-home-variant');
+        const v3HomeVariant = document.getElementById('v3-home-variant');
 
-    if (!newHomeVariant || !oldHomeVariant || !v3HomeVariant) {
-        console.error('[Split.io] Variant elements not found in DOM!');
-        return;
+        if (newHomeVariant && oldHomeVariant && v3HomeVariant) {
+            if (treatment === 'old_home') {
+                oldHomeVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing OLD home page');
+            } else if (treatment === 'dev_home') {
+                v3HomeVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing DEV developer-focused home page');
+            } else {
+                newHomeVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing NEW home page');
+            }
+        }
     }
 
-    if (treatment === 'old_home') {
-        oldHomeVariant.classList.add('active');
-        console.log('[Split.io] ✅ Showing OLD home page');
-    } else if (treatment === 'dev_home') {
-        v3HomeVariant.classList.add('active');
-        console.log('[Split.io] ✅ Showing DEV developer-focused home page');
-    } else {
-        // Default to new_home for 'new_home', 'control', or any other treatment
-        newHomeVariant.classList.add('active');
-        console.log('[Split.io] ✅ Showing NEW home page');
+    // Handle pricing page variants
+    const allPricingVariants = document.querySelectorAll('.pricing-variant');
+    if (allPricingVariants.length > 0) {
+        allPricingVariants.forEach(variant => {
+            variant.classList.remove('active');
+        });
+
+        const newPricingVariant = document.getElementById('new-pricing-variant');
+        const oldPricingVariant = document.getElementById('old-pricing-variant');
+        const v3PricingVariant = document.getElementById('v3-pricing-variant');
+
+        if (newPricingVariant && oldPricingVariant && v3PricingVariant) {
+            if (treatment === 'old_home') {
+                oldPricingVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing OLD pricing page');
+            } else if (treatment === 'dev_home') {
+                v3PricingVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing DEV pricing page');
+            } else {
+                newPricingVariant.classList.add('active');
+                console.log('[Split.io] ✅ Showing NEW pricing page');
+            }
+        }
     }
 }
 

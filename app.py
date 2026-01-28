@@ -14,6 +14,7 @@ from api.home_static import handle_old_home_static, handle_new_home_static, hand
 from api.time import handle_time
 from api.about import handle_about
 from api.pricing import handle_pricing
+from api.pricing_static import handle_old_pricing_static, handle_new_pricing_static, handle_v3_pricing_static
 from api.four_o_four import handle_404
 from api.login import handle_login, handle_logout
 from api.dashboard import handle_dashboard
@@ -112,6 +113,18 @@ def pricing():
     REQUEST_COUNT.labels('GET', '/pricing', 200).inc()
     REQUEST_LATENCY.labels('GET', '/pricing').observe(t.time() - start_time)
     return handle_pricing()
+
+@app.route('/old-pricing-static')
+def old_pricing_static():
+    return handle_old_pricing_static()
+
+@app.route('/new-pricing-static')
+def new_pricing_static():
+    return handle_new_pricing_static()
+
+@app.route('/v3-pricing-static')
+def v3_pricing_static():
+    return handle_v3_pricing_static()
 
 @app.errorhandler(404)
 def page_not_found(e):

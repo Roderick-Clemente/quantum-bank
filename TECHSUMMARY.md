@@ -36,12 +36,19 @@ The application supports **two modes** controlled by a **Split.io flag** `demo_m
 
 **Configuration:**
 
-**Primary: Split.io Flag** (recommended)
-- Create a Split.io flag called `demo_mode`
-- Treatments: `on` (demo mode) or `off` (traditional mode)
-- Control via Split.io dashboard - no server restart needed!
-
-**Fallback: Environment Variable**
+**Priority Order:**
+1. **URL Path `/demo`** - Forces demo mode ON (highest priority)
+   - Visit `qbank.dev/demo` → Demo mode automatically enabled
+   - Entry path stored in session, persists across requests
+   
+2. **Split.io Flag** (recommended for dynamic control)
+   - Create a Split.io flag called `demo_mode`
+   - Treatments: `on` (demo mode) or `off` (traditional mode)
+   - Control via Split.io dashboard - no server restart needed!
+   - **User Attributes:** Entry path (`entry_path`) is passed to Split.io for targeting
+   - Example targeting rule: `entry_path = '/demo'` → `on`
+   
+3. **Environment Variable** (fallback)
 ```bash
 # Demo mode (instant switching)
 DEMO_MODE=on
@@ -50,12 +57,18 @@ DEMO_MODE=on
 DEMO_MODE=off
 ```
 
-**Priority:** Split.io flag takes precedence, falls back to env var if flag not set or unavailable.
-
 **Default Behavior:**
 - Default is `off` (traditional mode) - safer for AI testing
 - If Split.io returns `'control'` (flag not configured or SDK not ready), falls back to env var
-- Console logs show exactly what's happening: `[Demo Mode] ✅ Split.io flag = ON` or `[Demo Mode] ❌ Split.io flag = OFF`
+- Console logs show exactly what's happening:
+  - `[Demo Mode] 🎯 Entry path '/demo' detected -> Demo mode FORCED ON`
+  - `[Demo Mode] ✅ Split.io flag = ON -> Demo mode ENABLED`
+  - `[Demo Mode] ❌ Split.io flag = OFF -> Demo mode DISABLED`
+
+**Split.io Targeting with Entry Path:**
+- Entry path is passed as user attribute: `{'entry_path': '/demo'}`
+- Use in Split.io targeting rules: `IF entry_path equals '/demo' THEN on`
+- Helps handle slower Split.io initialization - URL path takes precedence
 
 ### Dual SDK Pattern (Non-Standard Approach)
 

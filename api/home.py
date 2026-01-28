@@ -13,7 +13,7 @@ def handle_home():
     
     if is_demo_mode():
         # Demo mode: Pre-load all variants as iframes for instant switching
-        return render_template('home_wrapper.html')
+        return render_template('home_wrapper.html', demo_mode=True)
     else:
         # Traditional mode: Server-side rendering of single variant
         # Better for AI testing tools that need isolated variants

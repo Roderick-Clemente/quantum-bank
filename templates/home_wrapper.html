@@ -38,10 +38,60 @@
             color: #ffffff !important;
           }
       }
+
+    /* Demo Mode Indicator */
+    .demo-mode-badge {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #605dba 0%, #4f4ca8 100%);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(96, 93, 186, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Manrope', sans-serif;
+      letter-spacing: 0.5px;
+      animation: pulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .demo-mode-badge::before {
+      content: '⚡';
+      font-size: 14px;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .demo-mode-badge {
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+    }
   </style>
 </head>
 
 <body>
+  {% if demo_mode %}
+  <div class="demo-mode-badge">DEMO MODE</div>
+  {% endif %}
   <!-- New Home Variant (full page embedded) -->
   <iframe id="new-home-variant" class="home-variant" src="/new-home-static" style="width:100%;height:100vh;border:none;" data-variant="new_home"></iframe>
 

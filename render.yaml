@@ -13,5 +13,3 @@ services:
         value: 3.11.0
       - key: DEMO_MODE
         value: "off"
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app

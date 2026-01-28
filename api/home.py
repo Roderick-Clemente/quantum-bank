@@ -4,8 +4,8 @@ import os
 
 def is_demo_mode():
     """Check if demo mode is enabled (instant switching with iframes)"""
-    # Default to True for demo/showcase purposes
-    demo_mode = os.environ.get('DEMO_MODE', 'true').lower()
+    # Default to 'on' for demo/showcase purposes
+    demo_mode = os.environ.get('DEMO_MODE', 'on').lower()
     return demo_mode in ('true', '1', 'yes', 'on')
 
 def handle_home():

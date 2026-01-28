@@ -108,7 +108,7 @@ home_page_variant = 'dev_home'  → home_v3.html + pricing_v3.html
 
 ### Demo Mode: Wrapper Template Architecture
 
-**When `DEMO_MODE=true` (default):** Both home and pricing pages use a **wrapper pattern** that pre-loads all variants:
+**When `DEMO_MODE=on` or Split.io flag `demo_mode=on`:** Both home and pricing pages use a **wrapper pattern** that pre-loads all variants:
 
 **Home Page Flow (Demo Mode):**
 ```
@@ -136,7 +136,7 @@ home_page_variant = 'dev_home'  → home_v3.html + pricing_v3.html
 
 ### Traditional Mode: Server-Side Rendering
 
-**When `DEMO_MODE=false`:** Pages render single variant server-side:
+**When `DEMO_MODE=off` or Split.io flag `demo_mode=off` (default):** Pages render single variant server-side:
 
 **Home Page Flow (Traditional Mode):**
 ```
@@ -287,7 +287,7 @@ const SPLIT_CLIENT_KEY = '5lra47f9qtsf0dcrgcdur3k5sjhfblck0l67';
 
 ### Badge Display
 
-When `DEMO_MODE=true`, a visual indicator badge appears in the top-right corner of the page:
+When `DEMO_MODE=on` or Split.io flag `demo_mode=on`, a visual indicator badge appears in the bottom-left corner of the page:
 
 **Features:**
 - **Text:** "⚡ DEMO MODE" with lightning bolt icon
@@ -346,12 +346,13 @@ All variants include `data-testid` attributes for automated testing:
 ### 3. Pre-loaded Variants (Demo Mode Only)
 - In demo mode, all variants load as iframes (higher initial load time)
 - **Trade-off:** Instant switching vs. performance
-- **Solution:** Use `DEMO_MODE=false` for traditional server-side rendering
+- **Solution:** Use `DEMO_MODE=off` (default) or Split.io flag `demo_mode=off` for traditional server-side rendering
 
 ### 4. AI Testing Tool Compatibility
 - Demo mode with iframes can confuse AI testing tools (they may navigate into iframes)
-- **Solution:** Set `DEMO_MODE=false` for isolated variant testing
+- **Solution:** Default is `DEMO_MODE=off` - perfect for AI testing! Or use Split.io flag `demo_mode=off`
 - Traditional mode renders single variant, no iframes, cleaner for automation
+- Console logs show: `[Demo Mode] ✅ Split.io flag = ON` or `[Demo Mode] ❌ Split.io flag = OFF`
 
 ### 5. Database Persistence
 - SQLite on free tier resets on deploy
@@ -371,7 +372,8 @@ All variants include `data-testid` attributes for automated testing:
    - Copy `.env.example` to `.env`
    - Add `SPLIT_API_KEY` from Split.io dashboard
    - Set `SECRET_KEY` for Flask sessions
-   - Set `DEMO_MODE=true` for instant switching (default) or `DEMO_MODE=false` for traditional mode
+   - Set `DEMO_MODE=on` for instant switching or `DEMO_MODE=off` for traditional mode (default)
+   - Or use Split.io flag `demo_mode` (treatments: `on`/`off`) - no server restart needed!
 
 2. **Split.io Configuration:**
    - Create `home_page_variant` split in Split.io dashboard
@@ -387,14 +389,16 @@ All variants include `data-testid` attributes for automated testing:
    ```
 
 4. **Testing Variants:**
-   - **Demo Mode (`DEMO_MODE=true`):**
+   - **Demo Mode (`DEMO_MODE=on` or Split.io flag `demo_mode=on`):**
      - Visit `http://localhost:5001`
      - Change flag in Split.io dashboard
      - Verify instant switching without refresh (check browser console for logs)
-   - **Traditional Mode (`DEMO_MODE=false`):**
+     - Check server logs: `[Demo Mode] ✅ Split.io flag = ON -> Demo mode ENABLED`
+   - **Traditional Mode (`DEMO_MODE=off` or Split.io flag `demo_mode=off` - default):**
      - Visit `http://localhost:5001`
      - Change flag in Split.io dashboard
      - Refresh page to see new variant (better for AI testing tools)
+     - Check server logs: `[Demo Mode] ❌ Split.io flag = OFF -> Demo mode DISABLED`
 
 5. **Adding New Variants:**
    - Create new template (e.g., `home_v4.html`)

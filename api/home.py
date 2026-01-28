@@ -12,9 +12,9 @@ def is_demo_mode(user_key=None, entry_path=None):
     
     Handles Split.io SDK initialization timing gracefully.
     """
-    # Priority 1: Check if user came from /demo path
-    if entry_path == '/demo':
-        print(f"[Demo Mode] 🎯 Entry path '/demo' detected -> Demo mode FORCED ON")
+    # Priority 1: Check if entry path contains 'demo'
+    if entry_path and 'demo' in entry_path.lower():
+        print(f"[Demo Mode] 🎯 Entry path contains 'demo' ({entry_path}) -> Demo mode FORCED ON")
         return True
     
     # Priority 2: Try Split.io flag with user attributes
@@ -45,10 +45,12 @@ def is_demo_mode(user_key=None, entry_path=None):
         except Exception as e:
             print(f"[Demo Mode] Error getting Split.io treatment: {e} - using env var")
     
-    # Priority 3: Fallback to environment variable (safe default: 'off' for AI testing)
-    demo_mode = os.environ.get('DEMO_MODE', 'off').lower()
+    # Priority 3: Fallback to environment variable
+    # If entry_path contains 'demo', default to 'on', otherwise 'off' (safer for AI testing)
+    default_mode = 'on' if (entry_path and 'demo' in entry_path.lower()) else 'off'
+    demo_mode = os.environ.get('DEMO_MODE', default_mode).lower()
     result = demo_mode in ('true', '1', 'yes', 'on')
-    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: 'off') -> {result}")
+    print(f"[Demo Mode] Using env var DEMO_MODE = {demo_mode} (default: '{default_mode}') -> {result}")
     return result
 
 def handle_home():

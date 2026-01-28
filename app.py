@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from prometheus_client import make_wsgi_app, Counter, Histogram
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from dotenv import load_dotenv

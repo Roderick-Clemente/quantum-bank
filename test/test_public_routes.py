@@ -64,6 +64,9 @@ def test_home_content_json_shape(client):
     assert "treatment" in body
     assert "template" in body
     assert "url" in body
+    assert isinstance(body["treatment"], str)
+    assert isinstance(body["template"], str)
+    assert body["template"].endswith(".html")
 
 
 @pytest.mark.public

@@ -70,3 +70,61 @@ def test_account_detail_authenticated_200(client):
     response = client.get(f"/account?id={acct['id']}")
     assert response.status_code == 200
     assert b"Back to Dashboard" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_get_requires_login_redirect(client):
+    response = client.get("/transfer", follow_redirects=False)
+    assert response.status_code in (302, 303)
+    assert "login" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
+def test_account_without_id_redirects_to_dashboard(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+    response = client.get("/account", follow_redirects=False)
+    assert response.status_code in (302, 303)
+    assert "dashboard" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
+def test_transfer_post_same_account_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+    checking = next(
+        a
+        for a in client.get("/api/accounts").get_json()["accounts"]
+        if a["account_type"] == "checking"
+    )
+    aid = str(checking["id"])
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": aid,
+            "to_account": aid,
+            "amount": "10.00",
+            "description": "Test",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Cannot transfer to the same account" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_post_small_amount_succeeds(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": "1.00",
+            "description": "Pytest transfer",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Transfer successful" in response.data

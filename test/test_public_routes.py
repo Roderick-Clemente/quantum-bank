@@ -4,10 +4,21 @@ import pytest
 
 
 @pytest.mark.public
-def test_home_root_200_contains_quantum(client):
+def test_home_root_200_has_known_shell(client):
+    """Split off uses default home.html ('Harness Demo'); other flags use Quantum or variant markers."""
     response = client.get("/")
     assert response.status_code == 200
-    assert b"quantum" in response.data.lower()
+    lower = response.data.lower()
+    assert any(
+        needle in lower
+        for needle in (
+            b"quantum",
+            b"harness demo",
+            b"home-variant-",
+            b"/new-home-static",
+            b"cutting-edge",
+        )
+    )
 
 
 @pytest.mark.public

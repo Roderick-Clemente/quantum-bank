@@ -1,0 +1,99 @@
+# Reference export: Harness CI pipeline "rod-bank-pipeline" (kinda working baseline).
+# Scope: org=sandbox, project=devX_super_team. Connector identifier must exist in Harness.
+# Import or compare in Pipeline Studio; do not treat as auto-synced unless you wire GitOps.
+#
+# Last aligned with: GitHub Roderick-Clemente/quantum-bank, connectorRef quantumplatformdemo,
+# pytest via test/, SCA (OWASP + OSV), failure -> Abort.
+
+pipeline:
+  name: rod-bank-pipeline
+  identifier: rodbankpipeline
+  projectIdentifier: devX_super_team
+  orgIdentifier: sandbox
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: quantumplatformdemo
+        repoName: quantum-bank
+        build: <+input>
+        sparseCheckout: []
+  stages:
+    - stage:
+        name: Build
+        identifier: Build
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+          buildIntelligence:
+            enabled: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - stepGroup:
+                  name: SCA
+                  identifier: SCA
+                  steps:
+                    - parallel:
+                        - step:
+                            type: Owasp
+                            name: Owasp
+                            identifier: Owasp
+                            spec:
+                              mode: orchestration
+                              config: default
+                              target:
+                                type: repository
+                                detection: auto
+                              advanced:
+                                log:
+                                  level: info
+                        - step:
+                            type: OsvScanner
+                            name: OsvScanner
+                            identifier: OsvScanner
+                            spec:
+                              mode: orchestration
+                              config: default
+                              target:
+                                type: repository
+                                detection: auto
+                              advanced:
+                                log:
+                                  level: info
+              - step:
+                  type: Test
+                  name: Test_Intelligence
+                  identifier: Test_Intelligence
+                  spec:
+                    shell: Sh
+                    command: |-
+                      pip install -r requirements.txt
+                      pytest test/ -v --junit-xml=out_report.xml
+                    intelligenceMode: true
+              - step:
+                  type: RunTests
+                  name: RunTests
+                  identifier: RunTests
+                  spec:
+                    language: Python
+                    buildTool: Pytest
+                    args: test/ -v --junit-xml=runtests-report.xml
+                    runOnlySelectedTests: false
+                    preCommand: pip install -r requirements.txt
+                    enableTestSplitting: false
+                    testSplitStrategy: ClassTiming
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: Abort

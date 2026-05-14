@@ -11,6 +11,8 @@ packaging==24.0
 pluggy==1.4.0
 prometheus_client==0.20.0
 pytest==8.1.1
+pytest-cov==5.0.0
+coverage==7.6.1
 python-dotenv==1.1.1
 six==1.16.0
 splitio-client==10.5.1

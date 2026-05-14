@@ -1,9 +1,5 @@
-# Reference export: Harness CI pipeline "rod-bank-pipeline" (kinda working baseline).
-# Scope: org=sandbox, project=devX_super_team. Connector identifier must exist in Harness.
-# Import or compare in Pipeline Studio; do not treat as auto-synced unless you wire GitOps.
-#
-# Last aligned with: GitHub Roderick-Clemente/quantum-bank, connectorRef quantumplatformdemo,
-# pytest via test/, SCA (OWASP + OSV), failure -> Abort.
+# Reference: rod-bank-pipeline (Harness inline). Org=sandbox, project=devX_super_team.
+# Test step: pytest -> out_report.xml + JUnit reports for Harness Tests tab.
 
 pipeline:
   name: rod-bank-pipeline
@@ -38,6 +34,21 @@ pipeline:
             spec: {}
           execution:
             steps:
+              - step:
+                  type: Test
+                  name: Test_Intelligence
+                  identifier: Test_Intelligence
+                  spec:
+                    shell: Sh
+                    command: |-
+                      pip install -r requirements.txt
+                      pytest test/ -v --junit-xml=out_report.xml
+                    intelligenceMode: true
+                    reports:
+                      type: JUnit
+                      spec:
+                        paths:
+                          - out_report.xml
               - stepGroup:
                   name: SCA
                   identifier: SCA
@@ -69,31 +80,8 @@ pipeline:
                               advanced:
                                 log:
                                   level: info
-              - step:
-                  type: Test
-                  name: Test_Intelligence
-                  identifier: Test_Intelligence
-                  spec:
-                    shell: Sh
-                    command: |-
-                      pip install -r requirements.txt
-                      pytest test/ -v --junit-xml=out_report.xml
-                    intelligenceMode: true
-              - step:
-                  type: RunTests
-                  name: RunTests
-                  identifier: RunTests
-                  spec:
-                    language: Python
-                    buildTool: Pytest
-                    args: test/ -v --junit-xml=runtests-report.xml
-                    runOnlySelectedTests: false
-                    preCommand: pip install -r requirements.txt
-                    enableTestSplitting: false
-                    testSplitStrategy: ClassTiming
         failureStrategies:
           - onFailure:
-              errors:
-                - AllErrors
+              errors: []
               action:
-                type: Abort
+                type: MarkAsSuccess

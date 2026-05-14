@@ -4,6 +4,28 @@ import pytest
 
 
 @pytest.mark.public
+def test_home_after_demo_entry_shows_wrapper_shell(client):
+    client.get("/demo")
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    lower = response.data.lower()
+    assert b"home-variant" in lower or b"demo mode" in lower
+
+
+@pytest.mark.public
+def test_pricing_after_demo_entry_shows_wrapper_or_iframes(client):
+    client.get("/demo")
+
+    response = client.get("/pricing")
+
+    assert response.status_code == 200
+    lower = response.data.lower()
+    assert b"iframe" in lower or b"demo mode" in lower
+
+
+@pytest.mark.public
 def test_home_root_serves_recognizable_shell(client):
     """Split off uses default home.html ('Harness Demo'); other flags use Quantum or variant markers."""
     response = client.get("/")

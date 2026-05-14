@@ -66,7 +66,7 @@ def demo():
     # Store entry path in session for subsequent requests
     try:
         session['entry_path'] = '/demo'
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         print(f"[Demo] Warning: Could not set session: {e}")
     start_time = t.time()
     REQUEST_COUNT.labels('GET', '/demo', 200).inc()
@@ -78,7 +78,7 @@ def home():
     # Store entry path in session
     try:
         session['entry_path'] = request.path
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         print(f"[Home] Warning: Could not set session: {e}")
     start_time = t.time()
     REQUEST_COUNT.labels('GET', '/', 200).inc()
@@ -223,5 +223,5 @@ def api_transfer():
     REQUEST_LATENCY.labels('POST', '/api/transfer').observe(t.time() - start_time)
     return handle_api_transfer()
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     app.run(host='0.0.0.0', port=5001, debug=True)

@@ -4,6 +4,16 @@ import pytest
 
 
 @pytest.mark.api
+def test_api_account_detail_unauthenticated_returns_json_error(client):
+    response = client.get("/api/account/1")
+
+    assert response.status_code == 401
+    body = response.get_json()
+    assert body is not None
+    assert "error" in body
+
+
+@pytest.mark.api
 def test_api_accounts_unauthenticated_returns_json_error(client):
     response = client.get("/api/accounts")
 
@@ -96,6 +106,98 @@ def test_api_transfer_missing_fields_400(client):
     assert body is not None
     assert body.get("success") is False
     assert "Missing required fields" in body.get("message", "")
+
+
+@pytest.mark.api
+def test_api_transfer_invalid_amount_400(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": checking["id"],
+            "to_account_id": savings["id"],
+            "amount": -1,
+            "description": "negative",
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+    assert "Invalid amount" in body.get("message", "")
+
+
+@pytest.mark.api
+def test_api_transfer_invalid_amount_non_numeric_400(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": checking["id"],
+            "to_account_id": savings["id"],
+            "amount": "not-a-number",
+            "description": "bad",
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+
+
+@pytest.mark.api
+def test_api_transfer_insufficient_funds_400(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": checking["id"],
+            "to_account_id": savings["id"],
+            "amount": 999999999.0,
+            "description": "too big",
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+    assert "Insufficient funds" in body.get("message", "")
+
+
+@pytest.mark.api
+def test_api_transfer_account_not_found_400(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": 999998,
+            "to_account_id": 999999,
+            "amount": 1.0,
+            "description": "ghost accounts",
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+    assert "Account not found" in body.get("message", "")
 
 
 @pytest.mark.api

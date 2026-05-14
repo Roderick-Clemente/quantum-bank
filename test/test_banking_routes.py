@@ -66,6 +66,118 @@ def test_logout_after_login_redirects_to_login(client):
 
 
 @pytest.mark.banking
+def test_transactions_requires_login_redirect(client):
+    response = client.get("/transactions", follow_redirects=False)
+
+    assert response.status_code in (302, 303)
+    assert "login" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
+def test_account_detail_requires_login_redirect(client):
+    response = client.get("/account?id=1", follow_redirects=False)
+
+    assert response.status_code in (302, 303)
+    assert "login" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
+def test_transfer_page_renders_when_authenticated(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    response = client.get("/transfer")
+
+    assert response.status_code == 200
+    assert b"Transfer Money" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_post_missing_fields_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    response = client.post("/transfer", data={}, follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"All fields are required" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_post_invalid_amount_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": "not-a-number",
+            "description": "bad",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Invalid amount" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_post_zero_amount_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": "0",
+            "description": "zero",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Invalid amount" in response.data
+
+
+@pytest.mark.banking
+def test_transfer_post_insufficient_funds_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": "999999999.00",
+            "description": "too big",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Insufficient funds" in response.data
+
+
+@pytest.mark.banking
+def test_account_detail_unknown_id_redirects_to_dashboard(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    response = client.get("/account?id=999999", follow_redirects=False)
+
+    assert response.status_code in (302, 303)
+    assert "dashboard" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
 def test_transactions_authenticated_200(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 

@@ -2,10 +2,16 @@ import sqlite3
 from datetime import datetime
 import os
 
-DATABASE = 'quantum_bank.db'
+DEFAULT_DB = 'quantum_bank.db'
+
+
+def db_path():
+    """SQLite path; override with QUANTUM_BANK_DATABASE for isolated tests."""
+    return os.environ.get('QUANTUM_BANK_DATABASE', DEFAULT_DB)
+
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(db_path())
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -306,7 +312,7 @@ def transfer_money(from_account_id, to_account_id, amount, description='Transfer
         conn.close()
         return True, "Transfer successful"
 
-    except Exception as e:
+    except Exception as e:  # pragma: no cover — defensive; hard to trigger without DB corruption
         conn.rollback()
         conn.close()
         return False, str(e)

@@ -1,7 +1,7 @@
-from flask import Flask, request, session
-from prometheus_client import make_wsgi_app, Counter, Histogram
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from flask import Flask, request, session, Response
 from dotenv import load_dotenv
+
+from prometheus_minimal import Counter, Histogram, format_metrics
 import os
 
 # Load environment variables from .env file
@@ -46,9 +46,15 @@ init_split()
 # Clean up Split.io on app shutdown
 atexit.register(destroy_split)
 
-app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
-    '/metrics': make_wsgi_app()
-})
+
+@app.route("/metrics")
+def metrics():
+    return Response(
+        format_metrics(),
+        mimetype="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
 REQUEST_COUNT = Counter(
     'app_request_count',
     'Application Request Count',

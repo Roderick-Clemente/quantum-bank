@@ -41,6 +41,7 @@ htmlcov/
 SUBAGENT_PROMPT_*.md
 .cursor/rules/
 demo/
+drafts/
 # Note: .cursor/skills/ is intentionally tracked (shared review-tests skill).
 
 # Claude Code local/personal settings (machine-specific)

@@ -74,7 +74,7 @@
                     <div class="transaction-info">
                         <div class="transaction-description">{{ trans.description }}</div>
                         <div class="transaction-details">
-                            {{ trans.transaction_type|title }} • {{ trans.created_at[:10] }}
+                            {{ trans.transaction_type|title }} • {{ trans.created_at|string|truncate(10, true, '', 0) }}
                             {% if trans.recipient %}
                             • {{ trans.recipient }}
                             {% endif %}

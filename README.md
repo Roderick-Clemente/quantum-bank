@@ -89,16 +89,18 @@ seeded user **`demo`** (no password — demo only).
 > Split.io is optional locally: without `SPLIT_API_KEY` the app logs a warning
 > and falls back to env-var / default treatments, so every page still works.
 
-### PostgreSQL — flag + connection string
+### PostgreSQL — native local install
+
+Install and run Postgres on your machine (Homebrew on macOS), set
+`DATABASE_URL` + `POSTGRES_DATABASE=on`, then start the app.
+
+**Full guide:** [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md)
 
 ```bash
-# 1. Point at a Postgres instance (schema is applied automatically on init)
-export DATABASE_URL="postgresql://user:pass@host:5432/quantum_bank?sslmode=require"
-
-# 2. Turn the backend flag on (env var; or flip `postgres_database` in Split.io)
+# After Postgres is running and quantum_bank exists (see guide):
+export DATABASE_URL="postgresql://YOUR_OS_USER@localhost:5432/quantum_bank"
 export POSTGRES_DATABASE=on
-
-python app.py
+python app.py                     # → http://localhost:5001
 ```
 
 If `POSTGRES_DATABASE=on` but `DATABASE_URL` is unset, the app **stays on
@@ -163,35 +165,27 @@ Markers (see [pytest.ini](pytest.ini)): `public`, `banking`, `api`, `models`.
 > the repo yet, and no lint step in CI. Add `ruff` + `black` config and a lint
 > stage to the Harness pipeline, then surface a code-style badge here.
 
-The data-layer tests are **backend-parameterized**: point them at Postgres and
-the same assertions run against it.
-
-```bash
-# Run a local Postgres and exercise the suite against it
-docker run --rm -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=quantum_bank \
-  -p 5432:5432 postgres:16
-export DATABASE_URL="postgresql://postgres:pw@localhost:5432/quantum_bank"
-export POSTGRES_DATABASE=on
-pytest -m models
-```
+The data-layer tests run against **either** backend when env vars point at Postgres.
+See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test commands.
 
 > [!NOTE]
-> **TODO — run the Postgres matrix in CI.** Harness CI currently runs the suite
+> **TODO — run the Postgres matrix in CI (CHUNK_3).** Harness CI currently runs the suite
 > on **SQLite only**; the both-backend capability lives in the tests but the
-> pipeline does not yet provision a Postgres service. Adding a Postgres service
-> + `DATABASE_URL`/`POSTGRES_DATABASE=on` to the pipeline is a tracked next step.
+> pipeline does not yet provision a Postgres service. Adding a Background Postgres
+> step + `DATABASE_URL`/`POSTGRES_DATABASE=on` to the pipeline is the next step.
 >
 > This matters because some bugs are **Postgres-only** and a SQLite-only CI run
 > stays green through them — e.g. Postgres returns `created_at` as a `datetime`
 > while SQLite returns a string, so template date handling can pass on SQLite and
-> 500 on Postgres. Running the suite against both backends is what catches that
-> class of drift before a flag flip exposes it live.
+> 500 on Postgres. Running the suite against both backends catches that drift
+> before a flag flip exposes it live.
 
 ## Deployment
 
 | Target | How | Doc |
 |--------|-----|-----|
-| **Local** | `python app.py` (SQLite) or `docker compose up` | this README |
+| **Local SQLite** | `python app.py` | this README |
+| **Local Postgres** | Native install + `DATABASE_URL` | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) |
 | **Render** | `render.yaml` + Dockerfile; set `SPLIT_API_KEY`, `SECRET_KEY` | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) |
 | **Any managed Postgres** | Set `DATABASE_URL` + `POSTGRES_DATABASE=on` | above |
 | **Kubernetes (lab)** | Manifests under [`.harness/kubernetes/`](.harness/kubernetes/) | [HARNESS.md](HARNESS.md) |
@@ -202,6 +196,7 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 
 | Doc | What it covers |
 |-----|----------------|
+| [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) | **Native local Postgres** — Homebrew install, env, smoke, tests |
 | [demo-fun.md](demo-fun.md) | **Why** the app is shaped this way — demo spectacle vs. a "real" site for testers/AITs |
 | [TECHSUMMARY.md](TECHSUMMARY.md) | Architecture, flags, templates, metrics, file map |
 | [SPLITIO_SETUP.md](SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |

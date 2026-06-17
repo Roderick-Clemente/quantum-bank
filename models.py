@@ -86,6 +86,7 @@ def _split_sql_statements(sql: str) -> list[str]:
 
 
 def get_db():
+    """Return a new DB connection (one per call — fine for demo; pool before sustained PG traffic)."""
     _log_backend_once()
     if using_postgres():
         import psycopg2
@@ -390,7 +391,7 @@ def get_cards_by_account(account_id: int) -> list[dict]:
     cursor.execute(_sql("SELECT * FROM cards WHERE account_id = ?"), (account_id,))
     cards = cursor.fetchall()
     conn.close()
-    return [_row_to_dict(card) for card in cards]
+    return [_normalize_row(_row_to_dict(card)) for card in cards]
 
 
 def create_transaction(

@@ -26,7 +26,7 @@ pipeline:
           caching:
             enabled: true
           buildIntelligence:
-            enabled: true
+            enabled: false
           platform:
             os: Linux
             arch: Amd64
@@ -59,7 +59,6 @@ pipeline:
                       pip install -r requirements.txt
                       unset DATABASE_URL
                       pytest test/ -v --junit-xml=out_sqlite.xml
-                    intelligenceMode: true
                     reports:
                       type: JUnit
                       spec:
@@ -72,15 +71,16 @@ pipeline:
                   spec:
                     shell: Sh
                     envVariables:
-                      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/quantum_bank"
+                      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/quantum_bank"
                       POSTGRES_DATABASE: "on"
                     command: |-
-                      for i in $(seq 1 30); do
-                        python -c "import socket; socket.create_connection(('postgres', 5432), 2).close()" 2>/dev/null && break
+                      pip install -r requirements.txt
+                      for i in $(seq 1 60); do
+                        python -c "import socket; socket.create_connection(('127.0.0.1', 5432), 2).close()" 2>/dev/null && break
                         sleep 1
                       done
+                      pytest test/test_a_models_bootstrap.py::test_database_schema_matches_expected_columns -v
                       pytest test/ -v --junit-xml=out_postgres.xml
-                    intelligenceMode: true
                     reports:
                       type: JUnit
                       spec:

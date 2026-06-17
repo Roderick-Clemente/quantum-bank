@@ -25,10 +25,10 @@ This doc captures **Harness Continuous Integration** wired to **GitHub** for thi
 
 2. **Pipeline codebase** — `connectorRef: quantumplatformdemo`, `repoName: quantum-bank`, `build: <+input>` (pass **`main`** when running).
 
-3. **CI stage “Build”** (order matters in YAML):
+3. **CI stage “Build”** (`buildIntelligence: false` — full pytest both runs; TI skipped all Postgres tests on run #23–#24):
    - **Background `postgres:16`** — throwaway Postgres for D8 dual-backend CI (`portBindings` on 5432).
    - **`Test_SQLite`** — `pip install -r requirements.txt`, `unset DATABASE_URL`, `POSTGRES_DATABASE=off`, pytest → `out_sqlite.xml`.
-   - **`Test_Postgres`** — readiness wait on `postgres:5432`, `DATABASE_URL` + `POSTGRES_DATABASE=on`, pytest → `out_postgres.xml`.
+   - **`Test_Postgres`** — `pip install`, parity test explicitly, then full suite; readiness wait on `127.0.0.1:5432` (Background `portBindings`), `DATABASE_URL` + `POSTGRES_DATABASE=on`, pytest → `out_postgres.xml`. Must stay `type: Test` (not `Run` — loses Background networking). Stage has `buildIntelligence: false` (TI skipped all 60 PG tests on run #23–#24 via filter file; run #26 showed `postgres` hostname DNS fails when tests actually connect — use `127.0.0.1`).
    - **SCA step group** (parallel): **OWASP** + **OSV Scanner** on the repository (orchestration / auto target).
 
 4. **Failure strategy** — default (fail the stage on step failure). The old **`MarkAsSuccess`** override was removed in CHUNK_3 so red tests surface as red pipelines.

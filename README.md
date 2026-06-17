@@ -169,10 +169,9 @@ The data-layer tests run against **either** backend when env vars point at Postg
 See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test commands.
 
 > [!NOTE]
-> **TODO — run the Postgres matrix in CI (CHUNK_3).** Harness CI currently runs the suite
-> on **SQLite only**; the both-backend capability lives in the tests but the
-> pipeline does not yet provision a Postgres service. Adding a Background Postgres
-> step + `DATABASE_URL`/`POSTGRES_DATABASE=on` to the pipeline is the next step.
+> **Postgres matrix in CI (CHUNK_3).** Harness runs pytest twice — SQLite (`POSTGRES_DATABASE=off`)
+> and Background `postgres:16` (`DATABASE_URL` + `POSTGRES_DATABASE=on`) — with separate JUnit
+> reports. See [HARNESS.md](HARNESS.md) and `.harness/pipelines/rodbank-pipeline-ci-reference.yaml`.
 >
 > This matters because some bugs are **Postgres-only** and a SQLite-only CI run
 > stays green through them — e.g. Postgres returns `created_at` as a `datetime`

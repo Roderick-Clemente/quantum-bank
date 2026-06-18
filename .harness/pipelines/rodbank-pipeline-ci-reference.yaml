@@ -48,7 +48,7 @@ pipeline:
                     portBindings:
                       "5432": "5432"
               - step:
-                  type: Test
+                  type: Run
                   name: Lint
                   identifier: Lint
                   spec:

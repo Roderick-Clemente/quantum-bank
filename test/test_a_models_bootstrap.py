@@ -28,7 +28,15 @@ _EXPECTED_SCHEMA = {
         "status",
         "created_at",
     },
-    "cards": {"id", "account_id", "card_type", "card_last4", "expiry_date", "status", "created_at"},
+    "cards": {
+        "id",
+        "account_id",
+        "card_type",
+        "card_last4",
+        "expiry_date",
+        "status",
+        "created_at",
+    },
 }
 
 _FORBIDDEN_CARD_COLUMNS = {"card_number", "cvv"}
@@ -126,7 +134,9 @@ def test_init_db_seeds_demo_on_empty_database(monkeypatch, split_unavailable, tm
 
 
 @pytest.mark.models
-def test_transfer_money_small_amount_updates_balances(monkeypatch, split_unavailable, tmp_path):
+def test_transfer_money_small_amount_updates_balances(
+    monkeypatch, split_unavailable, tmp_path
+):
     _configure_backend(monkeypatch, tmp_path)
     models = _reload_models()
     models.init_db()
@@ -151,14 +161,18 @@ def test_transfer_money_small_amount_updates_balances(monkeypatch, split_unavail
 
 
 @pytest.mark.models
-def test_demo_seeded_cards_expose_masked_last4_only(monkeypatch, split_unavailable, tmp_path):
+def test_demo_seeded_cards_expose_masked_last4_only(
+    monkeypatch, split_unavailable, tmp_path
+):
     _configure_backend(monkeypatch, tmp_path)
     models = _reload_models()
     models.init_db()
 
     user = models.get_user_by_username("demo")
     checking = next(
-        a for a in models.get_accounts_by_user(user["id"]) if a["account_type"] == "checking"
+        a
+        for a in models.get_accounts_by_user(user["id"])
+        if a["account_type"] == "checking"
     )
 
     cards = models.get_cards_by_account(checking["id"])
@@ -170,7 +184,9 @@ def test_demo_seeded_cards_expose_masked_last4_only(monkeypatch, split_unavailab
 
 
 @pytest.mark.models
-def test_database_schema_matches_expected_columns(monkeypatch, split_unavailable, tmp_path):
+def test_database_schema_matches_expected_columns(
+    monkeypatch, split_unavailable, tmp_path
+):
     """Drift guard: both backends expose the same logical column set (D3/D8)."""
     _configure_backend(monkeypatch, tmp_path)
     models = _reload_models()
@@ -192,17 +208,17 @@ def test_database_schema_matches_expected_columns(monkeypatch, split_unavailable
                 actual = {row["column_name"] for row in cursor.fetchall()}
                 missing = expected_columns - actual
                 assert not missing, f"{table} missing columns: {missing}"
-                assert not (_FORBIDDEN_CARD_COLUMNS & actual), (
-                    f"{table} has forbidden card columns"
-                )
+                assert not (
+                    _FORBIDDEN_CARD_COLUMNS & actual
+                ), f"{table} has forbidden card columns"
         else:
             for table, expected_columns in _EXPECTED_SCHEMA.items():
                 cursor.execute(f"PRAGMA table_info({table})")
                 actual = {row[1] for row in cursor.fetchall()}
                 missing = expected_columns - actual
                 assert not missing, f"{table} missing columns: {missing}"
-                assert not (_FORBIDDEN_CARD_COLUMNS & actual), (
-                    f"{table} has forbidden card columns"
-                )
+                assert not (
+                    _FORBIDDEN_CARD_COLUMNS & actual
+                ), f"{table} has forbidden card columns"
     finally:
         conn.close()

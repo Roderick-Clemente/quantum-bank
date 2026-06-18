@@ -111,8 +111,7 @@ def _apply_postgres_schema(conn) -> None:
 
 
 def _create_sqlite_schema(cursor) -> None:
-    cursor.execute(
-        """
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
@@ -120,10 +119,8 @@ def _create_sqlite_schema(cursor) -> None:
             full_name TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """
-    )
-    cursor.execute(
-        """
+        """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -135,10 +132,8 @@ def _create_sqlite_schema(cursor) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
-        """
-    )
-    cursor.execute(
-        """
+        """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             account_id INTEGER NOT NULL,
@@ -150,10 +145,8 @@ def _create_sqlite_schema(cursor) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (account_id) REFERENCES accounts (id)
         )
-        """
-    )
-    cursor.execute(
-        """
+        """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS cards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             account_id INTEGER NOT NULL,
@@ -164,8 +157,7 @@ def _create_sqlite_schema(cursor) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (account_id) REFERENCES accounts (id)
         )
-        """
-    )
+        """)
 
 
 def _insert_returning_id(cursor, sql, params):
@@ -238,37 +230,68 @@ def create_sample_data(conn):
 
     transactions = [
         (checking_id, "deposit", 1500.00, "Payroll Deposit", "Acme Corp", "completed"),
-        (checking_id, "withdrawal", -45.20, "Coffee Shop", "Blue Bottle Coffee", "completed"),
-        (checking_id, "withdrawal", -125.00, "Grocery Shopping", "Whole Foods", "completed"),
+        (
+            checking_id,
+            "withdrawal",
+            -45.20,
+            "Coffee Shop",
+            "Blue Bottle Coffee",
+            "completed",
+        ),
+        (
+            checking_id,
+            "withdrawal",
+            -125.00,
+            "Grocery Shopping",
+            "Whole Foods",
+            "completed",
+        ),
         (checking_id, "withdrawal", -89.99, "Online Purchase", "Amazon", "completed"),
-        (checking_id, "transfer", -500.00, "Transfer to Savings", "Savings Account", "completed"),
+        (
+            checking_id,
+            "transfer",
+            -500.00,
+            "Transfer to Savings",
+            "Savings Account",
+            "completed",
+        ),
     ]
 
     for trans in transactions:
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """
-            ),
+                """),
             trans,
         )
 
     savings_transactions = [
         (savings_id, "deposit", 5000.00, "Initial Deposit", "Self", "completed"),
-        (savings_id, "transfer", 500.00, "Transfer from Checking", "Checking Account", "completed"),
-        (savings_id, "interest", 25.75, "Monthly Interest", "Quantum Bank", "completed"),
+        (
+            savings_id,
+            "transfer",
+            500.00,
+            "Transfer from Checking",
+            "Checking Account",
+            "completed",
+        ),
+        (
+            savings_id,
+            "interest",
+            25.75,
+            "Monthly Interest",
+            "Quantum Bank",
+            "completed",
+        ),
     ]
 
     for trans in savings_transactions:
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """
-            ),
+                """),
             trans,
         )
 
@@ -276,17 +299,22 @@ def create_sample_data(conn):
         (credit_id, "charge", -234.50, "Restaurant", "Chez Pierre", "completed"),
         (credit_id, "charge", -89.99, "Gas Station", "Shell", "completed"),
         (credit_id, "charge", -599.99, "Electronics", "Best Buy", "completed"),
-        (credit_id, "payment", 500.00, "Credit Card Payment", "Online Payment", "completed"),
+        (
+            credit_id,
+            "payment",
+            500.00,
+            "Credit Card Payment",
+            "Online Payment",
+            "completed",
+        ),
     ]
 
     for trans in credit_transactions:
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """
-            ),
+                """),
             trans,
         )
 
@@ -297,12 +325,10 @@ def create_sample_data(conn):
 
     for card in cards:
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO cards (account_id, card_type, card_last4, expiry_date)
                 VALUES (?, ?, ?, ?)
-                """
-            ),
+                """),
             card,
         )
 
@@ -347,14 +373,12 @@ def get_transactions_by_account(account_id: int, limit: int = 10) -> list[dict]:
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        _sql(
-            """
+        _sql("""
             SELECT * FROM transactions
             WHERE account_id = ?
             ORDER BY created_at DESC
             LIMIT ?
-            """
-        ),
+            """),
         (account_id, limit),
     )
     transactions = cursor.fetchall()
@@ -367,16 +391,14 @@ def get_all_transactions_by_user(user_id: int, limit: int = 20) -> list[dict]:
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        _sql(
-            """
+        _sql("""
             SELECT t.*, a.account_type, a.account_number
             FROM transactions t
             JOIN accounts a ON t.account_id = a.id
             WHERE a.user_id = ?
             ORDER BY t.created_at DESC
             LIMIT ?
-            """
-        ),
+            """),
         (user_id, limit),
     )
     transactions = cursor.fetchall()
@@ -415,13 +437,11 @@ def create_transaction(
     )
 
     cursor.execute(
-        _sql(
-            """
+        _sql("""
             UPDATE accounts
             SET balance = balance + ?
             WHERE id = ?
-            """
-        ),
+            """),
         (amount, account_id),
     )
 
@@ -463,13 +483,17 @@ def transfer_money(
             return False, "Insufficient funds"
 
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
                 VALUES (?, ?, ?, ?, ?)
-                """
+                """),
+            (
+                from_account_id,
+                "transfer",
+                -amount,
+                description,
+                to_account["account_number"],
             ),
-            (from_account_id, "transfer", -amount, description, to_account["account_number"]),
         )
 
         cursor.execute(
@@ -478,13 +502,17 @@ def transfer_money(
         )
 
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
                 VALUES (?, ?, ?, ?, ?)
-                """
+                """),
+            (
+                to_account_id,
+                "transfer",
+                amount,
+                description,
+                from_account["account_number"],
             ),
-            (to_account_id, "transfer", amount, description, from_account["account_number"]),
         )
 
         cursor.execute(
@@ -496,7 +524,9 @@ def transfer_money(
         conn.close()
         return True, "Transfer successful"
 
-    except Exception:  # pragma: no cover — defensive; hard to trigger without DB corruption
+    except (
+        Exception
+    ):  # pragma: no cover — defensive; hard to trigger without DB corruption
         logger.exception("transfer_money failed")
         conn.rollback()
         conn.close()

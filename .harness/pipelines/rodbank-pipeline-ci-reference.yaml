@@ -49,6 +49,16 @@ pipeline:
                       "5432": "5432"
               - step:
                   type: Test
+                  name: Lint
+                  identifier: Lint
+                  spec:
+                    shell: Sh
+                    command: |-
+                      pip install ruff black
+                      ruff check .
+                      black --check .
+              - step:
+                  type: Test
                   name: Test_SQLite
                   identifier: Test_SQLite
                   spec:

@@ -207,6 +207,17 @@ def test_transfer_get_requires_login_redirect(client):
 
 
 @pytest.mark.banking
+def test_account_detail_non_numeric_id_redirects_to_dashboard(client):
+    """Postgres rejects non-int comparisons; coerce at the boundary on both backends."""
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    response = client.get("/account?id=not-a-number", follow_redirects=False)
+
+    assert response.status_code in (302, 303)
+    assert "dashboard" in response.headers.get("Location", "").lower()
+
+
+@pytest.mark.banking
 def test_account_without_id_redirects_to_dashboard(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 

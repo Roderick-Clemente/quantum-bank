@@ -7,9 +7,13 @@ def handle_account_detail():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    account_id = request.args.get("id")
+    raw_id = request.args.get("id")
+    if not raw_id:
+        return redirect(url_for("dashboard"))
 
-    if not account_id:
+    try:
+        account_id = int(raw_id)
+    except (TypeError, ValueError):
         return redirect(url_for("dashboard"))
 
     account = get_account_by_id(account_id)

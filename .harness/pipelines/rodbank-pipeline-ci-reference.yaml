@@ -54,7 +54,9 @@ pipeline:
                   spec:
                     shell: Sh
                     command: |-
-                      pip install ruff black
+                      # Pinned: floating versions silently red-light previously-green CI
+                      # when ruff/black ship stricter rules. Bump deliberately.
+                      pip install ruff==0.15.18 black==26.5.1
                       ruff check .
                       black --check .
               - step:

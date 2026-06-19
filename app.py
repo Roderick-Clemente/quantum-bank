@@ -1,42 +1,45 @@
-from flask import Flask, request, session, Response, g
 from dotenv import load_dotenv
 
-from prometheus_minimal import Counter, Histogram, format_metrics
-import os
-import time as t
-import atexit
+# MUST run before any module that reads os.environ at import time
+# (e.g. split_config.py captures SPLIT_API_KEY at module load).
+load_dotenv()
 
-from api.hello import handle_hello
-from api.home import handle_home
-from api.home_content import handle_home_content
-from api.home_static import (
+from flask import Flask, request, session, Response, g  # noqa: E402
+
+from prometheus_minimal import Counter, Histogram, format_metrics  # noqa: E402
+import os  # noqa: E402
+import time as t  # noqa: E402
+import atexit  # noqa: E402
+
+from api.hello import handle_hello  # noqa: E402
+from api.home import handle_home  # noqa: E402
+from api.home_content import handle_home_content  # noqa: E402
+from api.home_static import (  # noqa: E402
     handle_old_home_static,
     handle_new_home_static,
     handle_v3_home_static,
 )
-from api.time import handle_time
-from api.about import handle_about
-from api.pricing import handle_pricing
-from api.pricing_static import (
+from api.time import handle_time  # noqa: E402
+from api.about import handle_about  # noqa: E402
+from api.pricing import handle_pricing  # noqa: E402
+from api.pricing_static import (  # noqa: E402
     handle_old_pricing_static,
     handle_new_pricing_static,
     handle_v3_pricing_static,
 )
-from api.four_o_four import handle_404
-from api.login import handle_login, handle_logout
-from api.dashboard import handle_dashboard
-from api.accounts import handle_account_detail
-from api.transfer import handle_transfer, handle_api_transfer
-from api.transactions import handle_transactions
-from api.api_endpoints import (
+from api.four_o_four import handle_404  # noqa: E402
+from api.login import handle_login, handle_logout  # noqa: E402
+from api.dashboard import handle_dashboard  # noqa: E402
+from api.accounts import handle_account_detail  # noqa: E402
+from api.transfer import handle_transfer, handle_api_transfer  # noqa: E402
+from api.transactions import handle_transactions  # noqa: E402
+from api.api_endpoints import (  # noqa: E402
     handle_api_accounts,
     handle_api_transactions,
     handle_api_account_detail,
 )
-from models import init_db
-from split_config import init_split, destroy_split
-
-load_dotenv()
+from models import init_db  # noqa: E402
+from split_config import init_split, destroy_split  # noqa: E402
 
 app = Flask(__name__)
 app.secret_key = os.environ.get(

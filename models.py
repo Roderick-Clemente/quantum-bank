@@ -755,14 +755,20 @@ def transfer_money(
 
         # Demo-only progressive delivery:
         # writes to rewards_ledger should succeed only after schema is applied.
-        try_insert_rewards_points(
-            conn=conn,
-            cursor=cursor,
-            user_id=from_account["user_id"],
-            source_account_id=from_account_id,
-            target_account_id=to_account_id,
-            transfer_amount=amount,
-        )
+        cursor.execute("SAVEPOINT rewards_savepoint")
+        try:
+            try_insert_rewards_points(
+                conn=conn,
+                cursor=cursor,
+                user_id=from_account["user_id"],
+                source_account_id=from_account_id,
+                target_account_id=to_account_id,
+                transfer_amount=amount,
+            )
+            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
+        except Exception:
+            cursor.execute("ROLLBACK TO SAVEPOINT rewards_savepoint")
+            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
 
         conn.commit()
         conn.close()

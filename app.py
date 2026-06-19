@@ -1,9 +1,8 @@
-from flask import Flask, request, session, Response
+from flask import Flask, request, session, Response, g
 from dotenv import load_dotenv
 
 from prometheus_minimal import Counter, Histogram, format_metrics
 import os
-
 import time as t
 import atexit
 
@@ -37,7 +36,6 @@ from api.api_endpoints import (
 from models import init_db
 from split_config import init_split, destroy_split
 
-# Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
@@ -46,21 +44,47 @@ app.secret_key = os.environ.get(
 )
 
 
-# Custom Jinja2 filter for currency formatting
 @app.template_filter("currency")
 def currency_filter(value):
     """Format number as currency with commas and 2 decimal places"""
     return "{:,.2f}".format(float(value))
 
 
-# Initialize database
 init_db()
-
-# Initialize Split.io
 init_split()
-
-# Clean up Split.io on app shutdown
 atexit.register(destroy_split)
+
+
+REQUEST_COUNT = Counter(
+    "app_request_count",
+    "Application Request Count",
+    ["method", "endpoint", "http_status"],
+)
+REQUEST_LATENCY = Histogram(
+    "app_request_latency_seconds",
+    "Application Request Latency",
+    ["method", "endpoint"],
+)
+
+
+@app.before_request
+def _record_request_start():
+    # Skip /metrics so Prometheus scrapes don't inflate their own series.
+    if request.endpoint == "metrics":
+        return
+    g._start_time = t.time()
+
+
+@app.after_request
+def _record_request_metrics(response):
+    if request.endpoint == "metrics":
+        return response
+    rule = request.url_rule.rule if request.url_rule else "unknown"
+    REQUEST_COUNT.labels(request.method, rule, response.status_code).inc()
+    start = getattr(g, "_start_time", None)
+    if start is not None:
+        REQUEST_LATENCY.labels(request.method, rule).observe(t.time() - start)
+    return response
 
 
 @app.route("/metrics")
@@ -71,48 +95,27 @@ def metrics():
     )
 
 
-REQUEST_COUNT = Counter(
-    "app_request_count",
-    "Application Request Count",
-    ["method", "endpoint", "http_status"],
-)
-REQUEST_LATENCY = Histogram(
-    "app_request_latency_seconds", "Application Request Latency", ["method", "endpoint"]
-)
-
-
 @app.route("/demo")
 def demo():
     """Demo entry point - forces demo mode ON"""
-    # Store entry path in session for subsequent requests
     try:
         session["entry_path"] = "/demo"
     except Exception as e:  # pragma: no cover
         print(f"[Demo] Warning: Could not set session: {e}")
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/demo", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/demo").observe(t.time() - start_time)
     return handle_home()
 
 
 @app.route("/")
 def home():
-    # Store entry path in session
     try:
         session["entry_path"] = request.path
     except Exception as e:  # pragma: no cover
         print(f"[Home] Warning: Could not set session: {e}")
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/").observe(t.time() - start_time)
     return handle_home()
 
 
 @app.route("/api/home-content")
 def home_content():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/api/home-content", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/api/home-content").observe(t.time() - start_time)
     return handle_home_content()
 
 
@@ -133,33 +136,21 @@ def v3_home_static():
 
 @app.route("/hello")
 def hello():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/hello", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/hello").observe(t.time() - start_time)
     return handle_hello()
 
 
 @app.route("/time")
 def time():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/time", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/time").observe(t.time() - start_time)
     return handle_time()
 
 
 @app.route("/about")
 def about():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/about", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/about").observe(t.time() - start_time)
     return handle_about()
 
 
 @app.route("/pricing")
 def pricing():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/pricing", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/pricing").observe(t.time() - start_time)
     return handle_pricing()
 
 
@@ -180,95 +171,58 @@ def v3_pricing_static():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "unknown", 404).inc()
-    REQUEST_LATENCY.labels("GET", "unknown").observe(t.time() - start_time)
     return handle_404()
 
 
 # Banking routes
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    start_time = t.time()
-    REQUEST_COUNT.labels("POST" if "POST" else "GET", "/login", 200).inc()
-    REQUEST_LATENCY.labels("POST" if "POST" else "GET", "/login").observe(
-        t.time() - start_time
-    )
     return handle_login()
 
 
 @app.route("/logout")
 def logout():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/logout", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/logout").observe(t.time() - start_time)
     return handle_logout()
 
 
 @app.route("/dashboard")
 def dashboard():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/dashboard", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/dashboard").observe(t.time() - start_time)
     return handle_dashboard()
 
 
 @app.route("/account")
 def account():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/account", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/account").observe(t.time() - start_time)
     return handle_account_detail()
 
 
 @app.route("/transfer", methods=["GET", "POST"])
 def transfer():
-    start_time = t.time()
-    REQUEST_COUNT.labels("POST" if "POST" else "GET", "/transfer", 200).inc()
-    REQUEST_LATENCY.labels("POST" if "POST" else "GET", "/transfer").observe(
-        t.time() - start_time
-    )
     return handle_transfer()
 
 
 @app.route("/transactions")
 def transactions():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/transactions", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/transactions").observe(t.time() - start_time)
     return handle_transactions()
 
 
 # API routes
 @app.route("/api/accounts")
 def api_accounts():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/api/accounts", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/api/accounts").observe(t.time() - start_time)
     return handle_api_accounts()
 
 
 @app.route("/api/transactions")
 def api_transactions():
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/api/transactions", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/api/transactions").observe(t.time() - start_time)
     return handle_api_transactions()
 
 
 @app.route("/api/account/<int:account_id>")
 def api_account_detail(account_id):
-    start_time = t.time()
-    REQUEST_COUNT.labels("GET", "/api/account", 200).inc()
-    REQUEST_LATENCY.labels("GET", "/api/account").observe(t.time() - start_time)
     return handle_api_account_detail(account_id)
 
 
 @app.route("/api/transfer", methods=["POST"])
 def api_transfer():
-    start_time = t.time()
-    REQUEST_COUNT.labels("POST", "/api/transfer", 200).inc()
-    REQUEST_LATENCY.labels("POST", "/api/transfer").observe(t.time() - start_time)
     return handle_api_transfer()
 
 

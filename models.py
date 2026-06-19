@@ -266,6 +266,33 @@ def _compute_reward_points(transfer_amount: float) -> int:
     return max(0, int(transfer_amount // (10.0 / REWARDS_POINTS_PER_10_DOLLARS)))
 
 
+def _resolve_rewards_schema_state(cursor=None) -> str:
+    """Resolve rollout schema state from live flags + table presence."""
+    global _rewards_schema_state
+
+    if is_demo_force_rollout_migration_fail():
+        _rewards_schema_state = "forced_fail"
+        return _rewards_schema_state
+
+    if not is_demo_rollout_schema_enabled():
+        _rewards_schema_state = "skipped"
+        return _rewards_schema_state
+
+    own_conn = None
+    if cursor is None:
+        own_conn = get_db()
+        cursor = own_conn.cursor()
+    try:
+        _rewards_schema_state = "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+        return _rewards_schema_state
+    except Exception:
+        _rewards_schema_state = "runtime_error"
+        return _rewards_schema_state
+    finally:
+        if own_conn is not None:
+            own_conn.close()
+
+
 def try_insert_rewards_points(
     *,
     conn,
@@ -278,7 +305,7 @@ def try_insert_rewards_points(
     """Attempt to insert rewards points; never fail the core transfer."""
     if not is_demo_rollout_feature_enabled():
         return False
-    if _rewards_schema_state != "ready":
+    if _resolve_rewards_schema_state(cursor) != "ready":
         return False
 
     try:
@@ -296,12 +323,10 @@ def try_insert_rewards_points(
             ),
             (user_id, source_account_id, target_account_id, points),
         )
+        logger.info("rewards.rollout.write_succeeded points=%s", points)
         return True
     except Exception as exc:
-        logger.warning(
-            "Rewards insert failed (rolling back to legacy writes): %s",
-            exc,
-        )
+        logger.warning("rewards.rollout.write_failed reason=%s", exc.__class__.__name__)
         return False
 
 
@@ -312,15 +337,19 @@ def get_rewards_points_for_user(
     if not is_demo_rollout_feature_enabled():
         return None, None
 
-    if _rewards_schema_state == "forced_fail":
-        return None, "rollback_forced_fail"
-    if _rewards_schema_state in {"skipped", "unknown"}:
-        return None, "legacy_no_schema"
-    if _rewards_schema_state == "runtime_error":
-        return None, "rollback_runtime_error"
-
     conn = get_db()
     cursor = conn.cursor()
+    schema_state = _resolve_rewards_schema_state(cursor)
+
+    if schema_state == "forced_fail":
+        conn.close()
+        return None, "rollback_forced_fail"
+    if schema_state in {"skipped", "unknown"}:
+        conn.close()
+        return None, "legacy_no_schema"
+    if schema_state == "runtime_error":
+        conn.close()
+        return None, "rollback_runtime_error"
 
     try:
         cursor.execute(
@@ -338,10 +367,7 @@ def get_rewards_points_for_user(
         points_total = data.get("points_total")
         return int(points_total) if points_total is not None else 0, None
     except Exception as exc:
-        logger.warning(
-            "Rewards points lookup failed (rolling back to legacy reads): %s",
-            exc,
-        )
+        logger.warning("rewards.rollout.read_failed reason=%s", exc.__class__.__name__)
         return None, "rollback_runtime_error"
     finally:
         conn.close()

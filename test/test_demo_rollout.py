@@ -3,6 +3,16 @@ import re
 import pytest
 
 
+def _enable_rollout(monkeypatch, schema: str, feature: str, force: str):
+    monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", schema)
+    monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", feature)
+    monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", force)
+
+    import models
+
+    models.init_db()
+
+
 def _login_demo(client):
     response = client.post("/login", data={"username": "demo"}, follow_redirects=True)
     assert response.status_code == 200
@@ -108,9 +118,7 @@ def test_dashboard_shows_no_rewards_state_when_schema_ready_but_feature_off(
 def test_dashboard_shows_rewards_points_when_schema_and_feature_are_enabled(
     client, monkeypatch, rollout_env, rewards_ledger_clean
 ):
-    monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", "on")
-    monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", "on")
-    monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", "off")
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
     _login_demo(client)
     _post_transfer(client, 10.0)
 
@@ -175,9 +183,7 @@ def test_forced_fail_transfer_writes_no_visible_points_row(
 def test_dashboard_shows_exactly_one_point_for_ten_dollar_transfer(
     client, monkeypatch, rollout_env, rewards_ledger_clean
 ):
-    monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", "on")
-    monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", "on")
-    monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", "off")
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
     _login_demo(client)
     _post_transfer(client, 10.0)
 
@@ -191,9 +197,7 @@ def test_dashboard_shows_exactly_one_point_for_ten_dollar_transfer(
 def test_dashboard_does_not_increment_points_for_sub_ten_dollar_transfer(
     client, monkeypatch, rollout_env, rewards_ledger_clean
 ):
-    monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", "on")
-    monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", "on")
-    monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", "off")
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
     _login_demo(client)
     _post_transfer(client, 5.0)
     _post_transfer(client, 20.0)
@@ -230,9 +234,7 @@ def test_transfer_still_succeeds_when_rewards_insert_raises(
 def test_rewards_total_recovers_after_forced_failure_is_cleared(
     client, monkeypatch, rollout_env, rewards_ledger_clean
 ):
-    monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", "on")
-    monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", "on")
-    monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", "off")
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
     _login_demo(client)
     _post_transfer(client, 10.0)
 

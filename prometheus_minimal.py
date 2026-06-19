@@ -12,12 +12,14 @@ from collections import defaultdict
 
 _lock = threading.Lock()
 _counters: dict[tuple[str, tuple[tuple[str, str], ...]], int] = defaultdict(int)
-_histograms: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, float | int]] = defaultdict(
-    lambda: {"sum": 0.0, "count": 0}
+_histograms: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, float | int]] = (
+    defaultdict(lambda: {"sum": 0.0, "count": 0})
 )
 
 
-def _label_key(labelnames: tuple[str, ...], values: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+def _label_key(
+    labelnames: tuple[str, ...], values: tuple[str, ...]
+) -> tuple[tuple[str, str], ...]:
     return tuple(zip(labelnames, values, strict=True))
 
 

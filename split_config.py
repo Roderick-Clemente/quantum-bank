@@ -1,13 +1,14 @@
 """
 Split.io configuration and client initialization
 """
+
 from splitio import get_factory
 from splitio.exceptions import TimeoutException
 import os
 
 # Split.io API key - loaded from environment variable
 # Make sure to set SPLIT_API_KEY in your .env file
-SPLIT_API_KEY = os.environ.get('SPLIT_API_KEY')
+SPLIT_API_KEY = os.environ.get("SPLIT_API_KEY")
 
 if not SPLIT_API_KEY:
     print("⚠ WARNING: SPLIT_API_KEY not found in environment variables!")
@@ -17,15 +18,14 @@ if not SPLIT_API_KEY:
 split_factory = None
 split_client = None
 
+
 def init_split():
     """Initialize Split.io client"""
     global split_factory, split_client
 
     try:
         # Create factory with API key and config
-        config = {
-            'impressionsMode': 'optimized'
-        }
+        config = {"impressionsMode": "optimized"}
         split_factory = get_factory(SPLIT_API_KEY, config=config)
 
         # Get client instance
@@ -36,7 +36,9 @@ def init_split():
             split_factory.block_until_ready(5)  # 5 second timeout
             print("✓ Split.io client initialized successfully")
         except TimeoutException:
-            print("⚠ Split.io client initialization timed out, using default treatments")
+            print(
+                "⚠ Split.io client initialization timed out, using default treatments"
+            )
 
     except Exception as e:
         print(f"✗ Failed to initialize Split.io: {e}")
@@ -44,12 +46,14 @@ def init_split():
 
     return split_client
 
+
 def get_split_client():
     """Get the Split.io client instance"""
     global split_client
     if split_client is None:
         init_split()
     return split_client
+
 
 def destroy_split():
     """Clean up Split.io client"""

@@ -33,3 +33,17 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+
+# Local-only planning (AI sprints, not committed)
+.local/
+
+# AI-workflow scaffolding (internal — keep out of the public repo)
+SUBAGENT_PROMPT_*.md
+.cursor/rules/
+demo/
+drafts/
+# Note: .cursor/skills/ is intentionally tracked (shared review-tests skill).
+
+# Claude Code local/personal settings (machine-specific)
+.claude/settings.local.json
+.claude/settings.json

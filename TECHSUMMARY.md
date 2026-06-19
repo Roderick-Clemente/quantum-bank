@@ -243,7 +243,7 @@ Simple template renderers for iframe content. No Split.io evaluation needed sinc
 - `users` - User accounts (id, username, email, full_name)
 - `accounts` - Bank accounts (id, user_id, account_type, account_number, balance)
 - `transactions` - Transaction history (id, account_id, transaction_type, amount, description)
-- `cards` - Payment cards (id, account_id, card_type, card_number, expiry_date)
+- `cards` - Payment cards (id, account_id, card_type, card_last4, expiry_date) — synthetic demo data only; no CVV or full PAN
 
 **Initialization:** `models.py` auto-creates sample data on first run (demo user: `demo`).
 

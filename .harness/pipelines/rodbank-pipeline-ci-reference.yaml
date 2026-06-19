@@ -1,5 +1,6 @@
 # Reference: rod-bank-pipeline (Harness inline). Org=sandbox, project=devX_super_team.
-# Test step: pytest -> out_report.xml + JUnit reports for Harness Tests tab.
+# D8 dual-backend CI: Background postgres:16 + Test_SQLite (flag off) + Test_Postgres (flag on).
+# Keep in sync with Harness Studio (storeType=INLINE) when changing steps.
 
 pipeline:
   name: rod-bank-pipeline
@@ -25,7 +26,7 @@ pipeline:
           caching:
             enabled: true
           buildIntelligence:
-            enabled: true
+            enabled: false
           platform:
             os: Linux
             arch: Amd64
@@ -35,20 +36,66 @@ pipeline:
           execution:
             steps:
               - step:
-                  type: Test
-                  name: Test_Intelligence
-                  identifier: Test_Intelligence
+                  type: Background
+                  name: postgres
+                  identifier: postgres
+                  spec:
+                    image: postgres:16
+                    envVariables:
+                      POSTGRES_USER: postgres
+                      POSTGRES_PASSWORD: postgres
+                      POSTGRES_DB: quantum_bank
+                    portBindings:
+                      "5432": "5432"
+              - step:
+                  type: Run
+                  name: Lint
+                  identifier: Lint
                   spec:
                     shell: Sh
                     command: |-
+                      pip install ruff black
+                      ruff check .
+                      black --check .
+              - step:
+                  type: Test
+                  name: Test_SQLite
+                  identifier: Test_SQLite
+                  spec:
+                    shell: Sh
+                    envVariables:
+                      POSTGRES_DATABASE: "off"
+                    command: |-
                       pip install -r requirements.txt
-                      pytest test/ -v --junit-xml=out_report.xml
-                    intelligenceMode: true
+                      unset DATABASE_URL
+                      pytest test/ -v --junit-xml=out_sqlite.xml
                     reports:
                       type: JUnit
                       spec:
                         paths:
-                          - out_report.xml
+                          - out_sqlite.xml
+              - step:
+                  type: Test
+                  name: Test_Postgres
+                  identifier: Test_Postgres
+                  spec:
+                    shell: Sh
+                    envVariables:
+                      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/quantum_bank"
+                      POSTGRES_DATABASE: "on"
+                    command: |-
+                      pip install -r requirements.txt
+                      for i in $(seq 1 60); do
+                        python -c "import socket; socket.create_connection(('127.0.0.1', 5432), 2).close()" 2>/dev/null && break
+                        sleep 1
+                      done
+                      pytest test/test_a_models_bootstrap.py::test_database_schema_matches_expected_columns -v
+                      pytest test/ -v --junit-xml=out_postgres.xml
+                    reports:
+                      type: JUnit
+                      spec:
+                        paths:
+                          - out_postgres.xml
               - stepGroup:
                   name: SCA
                   identifier: SCA
@@ -80,8 +127,3 @@ pipeline:
                               advanced:
                                 log:
                                   level: info
-        failureStrategies:
-          - onFailure:
-              errors: []
-              action:
-                type: MarkAsSuccess

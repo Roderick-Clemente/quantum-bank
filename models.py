@@ -173,16 +173,14 @@ def _create_sqlite_schema(cursor) -> None:
 def _rewards_ledger_table_exists(cursor) -> bool:
     if using_postgres():
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 SELECT EXISTS (
                     SELECT 1
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
                       AND table_name = ?
                 ) AS exists
-                """
-            ),
+                """),
             (REWARDS_LEDGER_TABLE,),
         )
         row = cursor.fetchone()
@@ -223,8 +221,7 @@ def ensure_rewards_ledger_schema(
         return "exists"
 
     if using_postgres():
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS rewards_ledger (
                 id                  SERIAL PRIMARY KEY,
                 user_id             INTEGER NOT NULL REFERENCES users(id),
@@ -233,17 +230,13 @@ def ensure_rewards_ledger_schema(
                 points              INTEGER NOT NULL,
                 created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
-            """
-        )
-        cursor.execute(
-            """
+            """)
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_rewards_ledger_user_id
             ON rewards_ledger(user_id);
-            """
-        )
+            """)
     else:
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS rewards_ledger (
                 id                 INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id            INTEGER NOT NULL,
@@ -252,8 +245,7 @@ def ensure_rewards_ledger_schema(
                 points             INTEGER NOT NULL,
                 created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
-            """
-        )
+            """)
 
     if commit:
         conn.commit()
@@ -283,7 +275,9 @@ def _resolve_rewards_schema_state(cursor=None) -> str:
         own_conn = get_db()
         cursor = own_conn.cursor()
     try:
-        _rewards_schema_state = "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+        _rewards_schema_state = (
+            "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+        )
         return _rewards_schema_state
     except Exception:
         _rewards_schema_state = "runtime_error"
@@ -314,13 +308,11 @@ def try_insert_rewards_points(
             return False
 
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 INSERT INTO rewards_ledger
                     (user_id, source_account_id, target_account_id, points)
                 VALUES (?, ?, ?, ?)
-                """
-            ),
+                """),
             (user_id, source_account_id, target_account_id, points),
         )
         logger.info("rewards.rollout.write_succeeded points=%s", points)
@@ -353,13 +345,11 @@ def get_rewards_points_for_user(
 
     try:
         cursor.execute(
-            _sql(
-                """
+            _sql("""
                 SELECT COALESCE(SUM(points), 0) AS points_total
                 FROM rewards_ledger
                 WHERE user_id = ?
-                """
-            ),
+                """),
             (user_id,),
         )
         row = cursor.fetchone()

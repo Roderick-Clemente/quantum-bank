@@ -48,10 +48,12 @@ def rewards_ledger_clean():
     """Drop rewards table and clear cache after each test."""
     yield
 
-    use_pg = (
-        os.environ.get("POSTGRES_DATABASE", "off").lower() in {"on", "true", "1", "yes"}
-        and bool(os.environ.get("DATABASE_URL"))
-    )
+    use_pg = os.environ.get("POSTGRES_DATABASE", "off").lower() in {
+        "on",
+        "true",
+        "1",
+        "yes",
+    } and bool(os.environ.get("DATABASE_URL"))
 
     if use_pg:
         import psycopg2

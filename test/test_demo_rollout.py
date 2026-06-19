@@ -44,7 +44,7 @@ def _get_dashboard(client):
 
 
 def _extract_rewards_points(response):
-    match = re.search(br'data-testid="rewards-points">\s*(\d+)\s*<', response.data)
+    match = re.search(rb'data-testid="rewards-points">\s*(\d+)\s*<', response.data)
     if not match:
         return None
     return int(match.group(1))
@@ -126,7 +126,7 @@ def test_dashboard_shows_rewards_points_when_schema_and_feature_are_enabled(
 
     assert response.status_code == 200
     assert b'data-testid="rewards-banner"' not in response.data
-    assert re.search(br'data-testid="rewards-points">\s*\d+\s*<', response.data)
+    assert re.search(rb'data-testid="rewards-points">\s*\d+\s*<', response.data)
 
 
 @pytest.mark.banking
@@ -261,4 +261,3 @@ def test_rewards_total_recovers_after_forced_failure_is_cleared(
     assert response.status_code == 200
     assert after_points is not None
     assert after_points > before_points
-

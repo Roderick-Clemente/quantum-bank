@@ -37,7 +37,25 @@
                 <div class="summary-label">Recent Transactions</div>
                 <div class="summary-value">{{ recent_transactions|length }}</div>
             </div>
+            {% if rewards_points is not none %}
+            <div class="summary-card">
+                <div class="summary-label">Rewards</div>
+                <div class="summary-value" data-testid="rewards-points">{{ rewards_points }}</div>
+            </div>
+            {% endif %}
         </div>
+
+        {% if rewards_banner_kind %}
+        <div data-testid="rewards-banner" data-kind="{{ rewards_banner_kind }}" style="margin: 1.25rem 0; padding: 0.9rem 1rem; background: #fef3c7; border-radius: 10px; border: 1px solid #f59e0b; color: #92400e;">
+            {% if rewards_banner_kind == "legacy_no_schema" %}
+            Rewards are temporarily unavailable — running in legacy mode.
+            {% elif rewards_banner_kind == "rollback_forced_fail" %}
+            Rewards schema rollout failed — points are paused. Existing balances are safe.
+            {% elif rewards_banner_kind == "rollback_runtime_error" %}
+            Rewards lookup hit an error — points are paused.
+            {% endif %}
+        </div>
+        {% endif %}
 
         <!-- Accounts -->
         <h2 class="mb-3">Your Accounts</h2>

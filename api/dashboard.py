@@ -1,5 +1,9 @@
 from flask import render_template, session, redirect, url_for
-from models import get_accounts_by_user, get_all_transactions_by_user
+from models import (
+    get_accounts_by_user,
+    get_all_transactions_by_user,
+    get_rewards_points_for_user,
+)
 
 
 def handle_dashboard():
@@ -20,6 +24,7 @@ def handle_dashboard():
 
     # Get recent transactions
     recent_transactions = get_all_transactions_by_user(user_id, limit=5)
+    rewards_points, rewards_banner_kind = get_rewards_points_for_user(user_id)
 
     return render_template(
         "dashboard.html",
@@ -27,4 +32,6 @@ def handle_dashboard():
         accounts=accounts,
         total_balance=total_balance,
         recent_transactions=recent_transactions,
+        rewards_points=rewards_points,
+        rewards_banner_kind=rewards_banner_kind,
     )

@@ -757,6 +757,8 @@ def transfer_money(
             )
             cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
         except Exception:
+            # Load-bearing: on an aborted PG txn, RELEASE SAVEPOINT raises InFailedSqlTransaction;
+            # this except IS the rollback path, not just cleanup — do not collapse this try/except.
             cursor.execute("ROLLBACK TO SAVEPOINT rewards_savepoint")
             cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
 

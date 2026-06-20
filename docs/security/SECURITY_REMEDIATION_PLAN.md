@@ -14,10 +14,13 @@ disposition ledger (status report), not a forward-looking plan.
 - Snapshot date: 2026-06-19/20 (local triage + pipeline runs)
 - Pre-remediation Semgrep totals (early run): multiple Highs (IDOR was a manual gap not
   surfaced by SAST; nan-injection + raw-query surfaced as Highs).
-- Post-remediation: Harness execution `4sGWybvETOKXpbE1toxQvw` (run 44) showed
-  Semgrep `High: 1, Medium: 5` against the raw-query suppression mis-placement (fixed in
-  `6e221bc3`). The subsequent run on `6e221bc3` is the one that must show `High: 0`;
-  stamp its execution ID here once read from the pipeline artifact.
+- Remediation progression (per-execution artifacts, not the stale issue list):
+  - `4sGWybvETOKXpbE1toxQvw` (run 44): Semgrep `High: 1, Medium: 5` — caught the raw-query
+    suppression mis-placement, fixed in `6e221bc3`.
+  - `jXI6MBhlSby9ugsYwyFoQA` (QuantumBankDemoPipeline): `High: 0, Medium: 3, Low: 2` — the
+    three Mediums dispositioned in `733bf51f`.
+  - Post-`733bf51f` run: reported `High: 0, Medium: 0, Low: 0`. **Stamp the confirming
+    execution ID here** (relayed from the pipeline read; not yet recorded with its artifact ID).
 
 > Note: the MCP `security_issue` listing is known stale/inconsistent (APPSEC-950). Per-run
 > closure is judged from the latest execution artifact/logs, not that listing.
@@ -44,6 +47,9 @@ disposition ledger (status report), not a forward-looking plan.
 | Subresource Integrity on Split SDK CDN includes | **FIXED** | `42360e58` — `sha384` SRI + `crossorigin` on both `cdn.split.io` includes (`home_wrapper.html`, `pricing_wrapper.html`). Hash verified equal to the live `split-11.0.1.min.js` served by the CDN. |
 | JS scan noise (vendored `plugins.js`, `theme.js`) | **FALSE-POSITIVE** | `42360e58` — `.semgrepignore` scopes out only those two vendored files; no first-party code suppressed. |
 | Test-harness config / formatted SQL in tests | **FIXED** | `62d5849a`, `45430e29`, `3a2c3572` — env-driven testing config, static table→query map, scoped suppression in schema-parity test. |
+| `writable-filesystem-service` (CWE-732) — docker-compose `prometheus` | **FIXED** | `733bf51f` — `read_only: true` + `tmpfs: /prometheus`, mirroring the `app` service treatment (the prior compose hardening missed the prometheus sidecar). |
+| `allow-privilege-escalation-no-securitycontext` (CWE-732) — k8s `prometheus/deployment.yaml` | **FIXED** | `733bf51f` — container `securityContext: allowPrivilegeEscalation: false, runAsNonRoot: true`, mirroring the backend deployment; `prom/prometheus` already runs non-root. |
+| `path-traversal` (CWE-22) — `static/images/logos/convert-to-png.js:36` | **FALSE-POSITIVE** | `733bf51f` — standalone dev build utility (no `package.json`, not in CI, not deployed, has a `.py` twin); reads a hardcoded in-repo SVG list, no user input reaches `fs.readFileSync`. Added to `.semgrepignore` with rationale. |
 
 ## SAST Gating Status
 
@@ -61,6 +67,7 @@ disposition ledger (status report), not a forward-looking plan.
 
 - [x] IDOR ownership-control issue fixed and covered by regression test.
 - [x] All High-severity Semgrep findings dispositioned (fixed or documented false-positive).
+- [x] All Medium + Low Semgrep findings dispositioned (post-`733bf51f` run reported 0/0/0).
 - [x] Security triage ledger with finding IDs, decisions, and evidence links (this document).
 - [ ] SAST gate flipped to fail-on-High + break-drill (tracked follow-up above).
 - [ ] Browser verification of the Split.io live-variant demo (SRI hash confirmed matching;

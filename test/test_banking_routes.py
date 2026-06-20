@@ -309,6 +309,9 @@ def test_transfer_post_rejects_cross_user_source_account(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 
     import models
+    import uuid
+
+    suffix = uuid.uuid4().hex[:12]
 
     conn = models.get_db()
     try:
@@ -319,7 +322,7 @@ def test_transfer_post_rejects_cross_user_source_account(client):
             INSERT INTO users (username, email, full_name)
             VALUES (?, ?, ?)
             """,
-            ("attacker", "attacker@example.com", "Attacker User"),
+            (f"attacker_{suffix}", f"attacker_{suffix}@example.com", "Attacker User"),
         )
         attacker_checking_id = models._insert_returning_id(
             cursor,
@@ -327,7 +330,7 @@ def test_transfer_post_rejects_cross_user_source_account(client):
             INSERT INTO accounts (user_id, account_type, account_number, balance)
             VALUES (?, ?, ?, ?)
             """,
-            (attacker_user_id, "checking", "QB-CHK-999999", 500.0),
+            (attacker_user_id, "checking", f"QB-CHK-{suffix}", 500.0),
         )
         conn.commit()
     finally:

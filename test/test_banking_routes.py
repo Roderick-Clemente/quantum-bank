@@ -146,6 +146,29 @@ def test_transfer_post_nan_amount_shows_error(client):
 
 
 @pytest.mark.banking
+@pytest.mark.parametrize("bad_amount", ["nan", "NaN", "inf"])
+def test_transfer_post_rejects_nan_inf_strings(client, bad_amount):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": bad_amount,
+            "description": "bad-float-string",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Invalid amount" in response.data
+
+
+@pytest.mark.banking
 def test_transfer_post_zero_amount_shows_error(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 

@@ -27,8 +27,8 @@ Traditional mode keeps **one** nav, **one** set of labels, and **one** set of `d
 ## How this maps to the code (pointers)
 
 - **Demo vs traditional:** `api/home.py`, `api/pricing.py` (`is_demo_mode`, session `entry_path`, Split `demo_mode`, env `DEMO_MODE`, forced `/demo` route in `app.py`).
-- **Variant selection:** Split `home_page_variant` (server in traditional mode; client in demo wrappers)—see `TECHSUMMARY.md` and `SPLITIO_SETUP.md`.
-- **Deployment:** `RENDER_DEPLOYMENT.md`.
+- **Variant selection:** Split `home_page_variant` (server in traditional mode; client in demo wrappers)—see [SPLITIO_SETUP.md](SPLITIO_SETUP.md).
+- **Deployment:** [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md).
 
 ---
 

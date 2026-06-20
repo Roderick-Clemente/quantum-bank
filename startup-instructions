@@ -1,4 +1,0 @@
-
-#run the following to get this going
-source venv/bin/activate
-python app.py

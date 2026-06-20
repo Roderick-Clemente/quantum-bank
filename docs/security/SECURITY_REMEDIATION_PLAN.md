@@ -84,7 +84,9 @@ disposition ledger (status report), not a forward-looking plan.
       historical versions scanned clean). Removed from HEAD; in-repo references repointed to the
       checked-in pipeline reference YAML. **Not** scrubbed from git history (added in `e6a6a76b`):
       a force-rewrite of 317 commits on a public, already-indexed repo is high-cost and cannot
-      un-cache forks/mirrors — the IDs are recon-only without credentials. Hygiene follow-up:
-      rotate the read-only GitHub PAT the doc described, since its scope is now public.
+      un-cache forks/mirrors — the IDs are recon-only without credentials. The read-only GitHub
+      PAT the doc described was **rotated on 2026-06-20**, invalidating the old token and fully
+      neutralizing the residual history exposure (the old credential is now dead regardless of
+      what remains retrievable from old commits).
 - [ ] Browser verification of the Split.io live-variant demo (SRI hash confirmed matching;
       live variant-switching behind it not yet exercised).

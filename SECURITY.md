@@ -31,5 +31,5 @@ For anything you'd prefer not to disclose publicly, use GitHub's private
 ## Scope notes
 
 - Dependency/SCA scanning (OWASP Dependency-Check, OSV) runs in the Harness CI
-  pipeline — see [HARNESS.md](HARNESS.md).
+  pipeline — see [`.harness/pipelines/rodbank-pipeline-ci-reference.yaml`](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
 - Do not deploy this app as a real financial service.

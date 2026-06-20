@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import tempfile
 
 import pytest
@@ -28,3 +29,51 @@ def client():
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
+
+
+@pytest.fixture
+def rollout_env(monkeypatch):
+    """Reset rollout flags so scenarios cannot leak state."""
+    for key in (
+        "DEMO_ROLLOUT_SCHEMA",
+        "DEMO_ROLLOUT_FEATURE",
+        "DEMO_FORCE_ROLLOUT_MIGRATION_FAIL",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    yield
+
+
+@pytest.fixture
+def rewards_ledger_clean():
+    """Drop rewards table and clear cache after each test."""
+    yield
+
+    use_pg = os.environ.get("POSTGRES_DATABASE", "off").lower() in {
+        "on",
+        "true",
+        "1",
+        "yes",
+    } and bool(os.environ.get("DATABASE_URL"))
+
+    if use_pg:
+        import psycopg2
+
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("DROP TABLE IF EXISTS rewards_ledger")
+            conn.commit()
+        finally:
+            conn.close()
+    else:
+        conn = sqlite3.connect(os.environ["QUANTUM_BANK_DATABASE"])
+        try:
+            conn.execute("DROP TABLE IF EXISTS rewards_ledger")
+            conn.commit()
+        finally:
+            conn.close()
+
+    import models
+
+    if hasattr(models, "_rewards_schema_state"):
+        models._rewards_schema_state = "unknown"

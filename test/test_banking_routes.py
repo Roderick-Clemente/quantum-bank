@@ -259,16 +259,24 @@ def test_transfer_post_small_amount_succeeds(client):
     accounts = client.get("/api/accounts").get_json()["accounts"]
     checking = next(a for a in accounts if a["account_type"] == "checking")
     savings = next(a for a in accounts if a["account_type"] == "savings")
+    checking_before = checking["balance"]
+    savings_before = savings["balance"]
+    amount = 1.00
     response = client.post(
         "/transfer",
         data={
             "from_account": str(checking["id"]),
             "to_account": str(savings["id"]),
-            "amount": "1.00",
+            "amount": str(amount),
             "description": "Pytest transfer",
         },
         follow_redirects=True,
     )
+    accounts_after = client.get("/api/accounts").get_json()["accounts"]
+    checking_after = next(a for a in accounts_after if a["account_type"] == "checking")
+    savings_after = next(a for a in accounts_after if a["account_type"] == "savings")
 
     assert response.status_code == 200
     assert b"Transfer successful" in response.data
+    assert checking_after["balance"] == pytest.approx(checking_before - amount)
+    assert savings_after["balance"] == pytest.approx(savings_before + amount)

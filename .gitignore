@@ -34,6 +34,9 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
+# Local demo run artifacts (see docs/demos/rewards-rollout.md)
+app.log
+
 # Local-only planning (AI sprints, not committed)
 .local/
 

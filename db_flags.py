@@ -66,3 +66,29 @@ def is_postgres_database_enabled(user_key: str = "__system__") -> bool:
         return False
 
     return True
+
+
+def _env_enabled(var_name: str, default: str = "off") -> bool:
+    return os.environ.get(var_name, default).lower() in _ON_VALUES
+
+
+# Demo-only progressive rollout flags (env-driven on purpose).
+# Defaults are OFF so existing app behavior stays unchanged.
+DEMO_ROLLOUT_SCHEMA_ENV = "DEMO_ROLLOUT_SCHEMA"
+DEMO_ROLLOUT_FEATURE_ENV = "DEMO_ROLLOUT_FEATURE"
+DEMO_FORCE_MIGRATION_FAIL_ENV = "DEMO_FORCE_ROLLOUT_MIGRATION_FAIL"
+
+
+def is_demo_rollout_schema_enabled() -> bool:
+    """Whether to allow applying the demo schema change (idempotent)."""
+    return _env_enabled(DEMO_ROLLOUT_SCHEMA_ENV, "off")
+
+
+def is_demo_rollout_feature_enabled() -> bool:
+    """Whether the demo feature should read/write the new schema."""
+    return _env_enabled(DEMO_ROLLOUT_FEATURE_ENV, "off")
+
+
+def is_demo_force_rollout_migration_fail() -> bool:
+    """If enabled, the migration will intentionally fail (for demo/rollback)."""
+    return _env_enabled(DEMO_FORCE_MIGRATION_FAIL_ENV, "off")

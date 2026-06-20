@@ -7,7 +7,12 @@ import os
 import sqlite3
 from decimal import Decimal
 
-from db_flags import is_postgres_database_enabled
+from db_flags import (
+    is_demo_force_rollout_migration_fail,
+    is_demo_rollout_feature_enabled,
+    is_demo_rollout_schema_enabled,
+    is_postgres_database_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +20,12 @@ DATABASE_URL_ENV = "DATABASE_URL"
 DEFAULT_DB = "quantum_bank.db"
 MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "migrations")
 
+# Rewards ledger used for progressive delivery walkthroughs.
+REWARDS_LEDGER_TABLE = "rewards_ledger"
+REWARDS_POINTS_PER_10_DOLLARS = 1
+
 _backend_logged = False
+_rewards_schema_state = "unknown"
 
 
 def using_postgres() -> bool:
@@ -160,6 +170,199 @@ def _create_sqlite_schema(cursor) -> None:
         """)
 
 
+def _rewards_ledger_table_exists(cursor) -> bool:
+    if using_postgres():
+        cursor.execute(
+            _sql("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = ?
+                ) AS exists
+                """),
+            (REWARDS_LEDGER_TABLE,),
+        )
+        row = cursor.fetchone()
+        data = _row_to_dict(row) or {}
+        return bool(data.get("exists"))
+
+    cursor.execute(
+        """
+        SELECT 1
+        FROM sqlite_master
+        WHERE type = 'table'
+          AND name = ?
+        LIMIT 1
+        """,
+        (REWARDS_LEDGER_TABLE,),
+    )
+    return cursor.fetchone() is not None
+
+
+def ensure_rewards_ledger_schema(
+    conn,
+    cursor=None,
+    *,
+    commit: bool = True,
+) -> str:
+    """Ensure the rewards ledger table exists (idempotent).
+
+    Returns a small status string for UX/demo messaging.
+    """
+    if not is_demo_rollout_schema_enabled():
+        return "skipped_schema_off"
+
+    if is_demo_force_rollout_migration_fail():
+        raise RuntimeError("intentional demo migration failure")
+
+    cursor = cursor or conn.cursor()
+    if _rewards_ledger_table_exists(cursor):
+        return "exists"
+
+    if using_postgres():
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS rewards_ledger (
+                id                  SERIAL PRIMARY KEY,
+                user_id             INTEGER NOT NULL REFERENCES users(id),
+                source_account_id  INTEGER NOT NULL REFERENCES accounts(id),
+                target_account_id  INTEGER NOT NULL REFERENCES accounts(id),
+                points              INTEGER NOT NULL,
+                created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_rewards_ledger_user_id
+            ON rewards_ledger(user_id);
+            """)
+    else:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS rewards_ledger (
+                id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id            INTEGER NOT NULL,
+                source_account_id INTEGER NOT NULL,
+                target_account_id INTEGER NOT NULL,
+                points             INTEGER NOT NULL,
+                created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
+
+    if commit:
+        conn.commit()
+    return "applied"
+
+
+def _compute_reward_points(transfer_amount: float) -> int:
+    # Demo logic: 1 point per $10 transferred (floored). Kept intentionally simple.
+    # Example: $10.00 => 1 point, $19.99 => 1 point, $9.99 => 0 points.
+    return max(0, int(transfer_amount // (10.0 / REWARDS_POINTS_PER_10_DOLLARS)))
+
+
+def _resolve_rewards_schema_state(cursor=None) -> str:
+    """Resolve rollout schema state from live flags + table presence."""
+    global _rewards_schema_state
+
+    if is_demo_force_rollout_migration_fail():
+        _rewards_schema_state = "forced_fail"
+        return _rewards_schema_state
+
+    if not is_demo_rollout_schema_enabled():
+        _rewards_schema_state = "skipped"
+        return _rewards_schema_state
+
+    own_conn = None
+    if cursor is None:
+        own_conn = get_db()
+        cursor = own_conn.cursor()
+    try:
+        _rewards_schema_state = (
+            "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+        )
+        return _rewards_schema_state
+    except Exception:
+        _rewards_schema_state = "runtime_error"
+        return _rewards_schema_state
+    finally:
+        if own_conn is not None:
+            own_conn.close()
+
+
+def try_insert_rewards_points(
+    *,
+    conn,
+    cursor,
+    user_id: int,
+    source_account_id: int,
+    target_account_id: int,
+    transfer_amount: float,
+) -> bool:
+    """Attempt to insert rewards points; never fail the core transfer."""
+    if not is_demo_rollout_feature_enabled():
+        return False
+    if _resolve_rewards_schema_state(cursor) != "ready":
+        return False
+
+    try:
+        points = _compute_reward_points(transfer_amount)
+        if points <= 0:
+            return False
+
+        cursor.execute(
+            _sql("""
+                INSERT INTO rewards_ledger
+                    (user_id, source_account_id, target_account_id, points)
+                VALUES (?, ?, ?, ?)
+                """),
+            (user_id, source_account_id, target_account_id, points),
+        )
+        logger.info("rewards.rollout.write_succeeded points=%s", points)
+        return True
+    except Exception as exc:
+        logger.warning("rewards.rollout.write_failed reason=%s", exc.__class__.__name__)
+        return False
+
+
+def get_rewards_points_for_user(
+    user_id: int,
+) -> tuple[int | None, str | None]:
+    """Return (points, banner) for UI; rolls back to legacy mode on errors."""
+    if not is_demo_rollout_feature_enabled():
+        return None, None
+
+    conn = get_db()
+    cursor = conn.cursor()
+    schema_state = _resolve_rewards_schema_state(cursor)
+
+    if schema_state == "forced_fail":
+        conn.close()
+        return None, "rollback_forced_fail"
+    if schema_state in {"skipped", "unknown"}:
+        conn.close()
+        return None, "legacy_no_schema"
+    if schema_state == "runtime_error":
+        conn.close()
+        return None, "rollback_runtime_error"
+
+    try:
+        cursor.execute(
+            _sql("""
+                SELECT COALESCE(SUM(points), 0) AS points_total
+                FROM rewards_ledger
+                WHERE user_id = ?
+                """),
+            (user_id,),
+        )
+        row = cursor.fetchone()
+        data = _row_to_dict(row) or {}
+        points_total = data.get("points_total")
+        return int(points_total) if points_total is not None else 0, None
+    except Exception as exc:
+        logger.warning("rewards.rollout.read_failed reason=%s", exc.__class__.__name__)
+        return None, "rollback_runtime_error"
+    finally:
+        conn.close()
+
+
 def _insert_returning_id(cursor, sql, params):
     if using_postgres():
         pg_sql = _sql(sql).rstrip().rstrip(";") + " RETURNING id"
@@ -172,6 +375,7 @@ def _insert_returning_id(cursor, sql, params):
 
 def init_db():
     """Initialize the database with tables and sample data."""
+    global _rewards_schema_state
     conn = get_db()
     cursor = conn.cursor()
 
@@ -180,6 +384,25 @@ def init_db():
     else:
         _create_sqlite_schema(cursor)
         conn.commit()
+
+    try:
+        schema_status = ensure_rewards_ledger_schema(conn, cursor, commit=True)
+        if schema_status in {"applied", "exists"}:
+            _rewards_schema_state = "ready"
+        elif schema_status == "skipped_schema_off":
+            _rewards_schema_state = "skipped"
+        else:
+            _rewards_schema_state = "runtime_error"
+    except RuntimeError as exc:  # pragma: no cover - controlled by env flag
+        if str(exc) == "intentional demo migration failure":
+            _rewards_schema_state = "forced_fail"
+        else:
+            _rewards_schema_state = "runtime_error"
+            logger.warning("Rewards schema setup failed at startup: %s", exc)
+    except Exception as exc:  # pragma: no cover — demo convenience
+        _rewards_schema_state = "runtime_error"
+        logger.warning("Rewards schema setup failed at startup: %s", exc)
+    logger.info("rewards.rollout.schema state=%s", _rewards_schema_state)
 
     cursor.execute(_sql("SELECT COUNT(*) FROM users"))
     if _scalar_from_row(cursor.fetchone()) == 0:
@@ -463,7 +686,7 @@ def transfer_money(
 
     try:
         cursor.execute(
-            _sql("SELECT balance, account_number FROM accounts WHERE id = ?"),
+            _sql("SELECT balance, account_number, user_id FROM accounts WHERE id = ?"),
             (from_account_id,),
         )
         from_account = _normalize_row(_row_to_dict(cursor.fetchone()))
@@ -519,6 +742,25 @@ def transfer_money(
             _sql("UPDATE accounts SET balance = balance + ? WHERE id = ?"),
             (amount, to_account_id),
         )
+
+        # Demo-only progressive delivery:
+        # writes to rewards_ledger should succeed only after schema is applied.
+        cursor.execute("SAVEPOINT rewards_savepoint")
+        try:
+            try_insert_rewards_points(
+                conn=conn,
+                cursor=cursor,
+                user_id=from_account["user_id"],
+                source_account_id=from_account_id,
+                target_account_id=to_account_id,
+                transfer_amount=amount,
+            )
+            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
+        except Exception:
+            # Load-bearing: on an aborted PG txn, RELEASE SAVEPOINT raises InFailedSqlTransaction;
+            # this except IS the rollback path, not just cleanup — do not collapse this try/except.
+            cursor.execute("ROLLBACK TO SAVEPOINT rewards_savepoint")
+            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
 
         conn.commit()
         conn.close()

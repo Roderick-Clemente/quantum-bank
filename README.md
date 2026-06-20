@@ -12,7 +12,7 @@ showcases live, refresh-free Split.io variant switching.
 [![Flask](https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Feature Flags](https://img.shields.io/badge/feature%20flags-Split.io-6E56CF)](https://www.split.io/)
 [![CI](https://img.shields.io/badge/CI-Harness-0096D6)](HARNESS.md)
-[![Tests](https://img.shields.io/badge/tests-60%20passing-3FB950)](test/)
+[![Tests](https://img.shields.io/badge/tests-75%20passing-3FB950)](test/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -196,11 +196,40 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 | Doc | What it covers |
 |-----|----------------|
 | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) | **Native local Postgres** — Homebrew install, env, smoke, tests |
+| [docs/demos/rewards-rollout.md](docs/demos/rewards-rollout.md) | Step-by-step rollout walkthrough (baseline -> fallback -> ready -> forced fail -> recovery) |
 | [demo-fun.md](demo-fun.md) | **Why** the app is shaped this way — demo spectacle vs. a "real" site for testers/AITs |
 | [TECHSUMMARY.md](TECHSUMMARY.md) | Architecture, flags, templates, metrics, file map |
 | [SPLITIO_SETUP.md](SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |
 | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Deploying to Render (Docker, env vars, custom domain) |
 | [HARNESS.md](HARNESS.md) | Harness CI pipeline, SCA triage, CI vs CD split |
+
+## Lessons learned (rewards rollout)
+
+- **Caller-owned savepoint matters:** placing the savepoint around the rewards call in `transfer_money` (not inside the helper) keeps core transfers safe even when rewards logic is monkeypatched or fails unexpectedly.
+- **Parity catches real bugs:** SQLite and Postgres can both pass happy paths while diverging on failure semantics; running both lanes is what made regression checks trustworthy.
+- **Contract-first tests scale:** stable `data-testid`/`data-kind` assertions kept UI copy flexible while making rollout states precise and reviewable.
+- **Prove the gate, not just green:** a deliberate-break CI drill was essential to show tests truly gate behavior instead of producing false confidence.
+
+## Rewards rollout architecture
+
+```mermaid
+flowchart TD
+    A[Rollout flags<br/>SCHEMA / FEATURE / FORCE_FAIL] --> B[init_db<br/>ensure_rewards_ledger_schema]
+    B --> C[_rewards_schema_state<br/>ready/skipped/forced_fail/runtime_error]
+
+    T[transfer_money] --> SP[SAVEPOINT around rewards call]
+    SP --> W[try_insert_rewards_points]
+    C --> W
+    W -->|success| WS[rewards.rollout.write_succeeded]
+    W -->|error| WF[rewards.rollout.write_failed]
+    SP --> TC[core transfer commit stays authoritative]
+
+    D[/dashboard] --> R[get_rewards_points_for_user]
+    C --> R
+    R -->|points| UI1[data-testid='rewards-points']
+    R -->|banner kind| UI2[data-testid='rewards-banner'<br/>data-kind enum]
+    R -->|read error| RF[rewards.rollout.read_failed]
+```
 
 ## Disclaimer & license
 

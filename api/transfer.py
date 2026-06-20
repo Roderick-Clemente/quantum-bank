@@ -38,7 +38,8 @@ def handle_transfer():
             )
 
         try:
-            if str(amount).strip().lower() in {
+            amount_str = str(amount).strip().lower()
+            if amount_str in {
                 "nan",
                 "+nan",
                 "-nan",
@@ -50,7 +51,7 @@ def handle_transfer():
                 "-infinity",
             }:
                 raise ValueError()
-            amount = float(amount)
+            amount = float(amount_str)
             if amount <= 0 or not math.isfinite(amount):
                 raise ValueError()
         except ValueError:
@@ -110,7 +111,8 @@ def handle_api_transfer():
         return jsonify({"success": False, "message": "Missing required fields"}), 400
 
     try:
-        if str(amount).strip().lower() in {
+        amount_str = str(amount).strip().lower()
+        if amount_str in {
             "nan",
             "+nan",
             "-nan",
@@ -122,7 +124,7 @@ def handle_api_transfer():
             "-infinity",
         }:
             raise ValueError()
-        amount = float(amount)
+        amount = float(amount_str)
         if amount <= 0 or not math.isfinite(amount):
             raise ValueError()
     except ValueError:

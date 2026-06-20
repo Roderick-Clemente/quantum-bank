@@ -159,6 +159,6 @@ Don't forget your client-side key in `static/js/split-client.js` should match yo
 ## Next Steps After Deployment
 
 1. Visit your app at `https://quantum-bank.onrender.com`
-2. Test login with demo user (username: `demo`, password: `demo123`)
+2. Test login with the seeded demo user (username: `demo`, no password — demo only)
 3. Verify Split.io feature flags work
 4. Once DNS propagates, access via `https://qbank.dev`

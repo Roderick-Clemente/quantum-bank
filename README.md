@@ -148,7 +148,7 @@ Copy [`.env.example`](.env.example) to `.env`. No real secrets are committed.
 | `QUANTUM_BANK_DATABASE` | Override SQLite file path (used to isolate test DBs). | `quantum_bank.db` |
 
 The **browser** SDK key lives in [`static/js/split-client.js`](static/js/split-client.js)
-(client-side keys are safe to expose). See [SPLITIO_SETUP.md](SPLITIO_SETUP.md)
+(client-side keys are safe to expose). See [docs/SPLITIO_SETUP.md](docs/SPLITIO_SETUP.md)
 for flag definitions (`home_page_variant`, `demo_mode`, `postgres_database`).
 
 ## Testing
@@ -186,7 +186,7 @@ See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test c
 |--------|-----|-----|
 | **Local SQLite** | `python app.py` | this README |
 | **Local Postgres** | Native install + `DATABASE_URL` | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) |
-| **Render** | `render.yaml` + Dockerfile; set `SPLIT_API_KEY`, `SECRET_KEY` | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) |
+| **Render** | `render.yaml` + Dockerfile; set `SPLIT_API_KEY`, `SECRET_KEY` | [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) |
 | **Any managed Postgres** | Set `DATABASE_URL` + `POSTGRES_DATABASE=on` | above |
 | **Kubernetes (lab)** | Manifests under [`.harness/kubernetes/`](.harness/kubernetes/) | [`.harness/`](.harness/) |
 
@@ -198,10 +198,10 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 |-----|----------------|
 | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) | **Native local Postgres** — Homebrew install, env, smoke, tests |
 | [docs/demos/rewards-rollout.md](docs/demos/rewards-rollout.md) | Step-by-step rollout walkthrough (baseline -> fallback -> ready -> forced fail -> recovery) |
-| [demo-fun.md](demo-fun.md) | **Why** the app is shaped this way — demo spectacle vs. a "real" site for testers/AITs |
-| [TECHSUMMARY.md](TECHSUMMARY.md) | Architecture, flags, templates, metrics, file map |
-| [SPLITIO_SETUP.md](SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |
-| [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Deploying to Render (Docker, env vars, custom domain) |
+| [docs/demo-fun.md](docs/demo-fun.md) | **Why** the app is shaped this way — demo spectacle vs. a "real" site for testers/AITs |
+| [docs/TECHSUMMARY.md](docs/TECHSUMMARY.md) | Architecture deep-dive — dual-SDK pattern, variant switching, limitations, handoff checklist |
+| [docs/SPLITIO_SETUP.md](docs/SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |
+| [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) | Deploying to Render (Docker, env vars, custom domain) |
 
 ## Lessons learned (rewards rollout)
 

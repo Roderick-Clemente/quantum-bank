@@ -28,8 +28,30 @@ a GitHub issue (or a pull request) on
 For anything you'd prefer not to disclose publicly, use GitHub's private
 **Security advisories** feature on the repository.
 
+## Hardening done
+
+Even as a demo, the app has been through a security pass. Notable fixes:
+
+- **Broken object-level authorization (IDOR) in transfers** — `transfer_money`
+  now verifies the source account belongs to the acting user before any debit,
+  and both the HTML and JSON transfer routes return `403` on a mismatch. Covered
+  by cross-user regression tests on both backends.
+- **NaN / non-finite amount injection** — transfer amounts are rejected unless
+  finite (`math.isfinite`) at both the route and model layers, closing a path
+  that could poison balance arithmetic.
+- **Container & orchestration hardening** — the image runs as a non-root user;
+  `docker-compose` and the Kubernetes manifests set `no-new-privileges`,
+  `read_only` root filesystems, and `allowPrivilegeEscalation: false` /
+  `runAsNonRoot: true`.
+- **Front-end** — Split.io CDN includes are pinned with Subresource Integrity
+  (SRI) hashes, and the client-side content swap enforces a same-origin guard.
+- **Safe debug defaults** — Flask debug is off unless explicitly enabled via env,
+  and the dev server binds to `127.0.0.1` rather than `0.0.0.0`.
+
 ## Scope notes
 
-- Dependency/SCA scanning (OWASP Dependency-Check, OSV) runs in the Harness CI
-  pipeline — see [`.harness/pipelines/rodbank-pipeline-ci-reference.yaml`](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
+- Static analysis (Semgrep) and dependency/SCA scanning (OWASP Dependency-Check,
+  OSV) run in the CI pipeline — see
+  [`.harness/pipelines/rodbank-pipeline-ci-reference.yaml`](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
+  The Semgrep stage gates the build at medium severity.
 - Do not deploy this app as a real financial service.

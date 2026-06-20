@@ -4,7 +4,7 @@ Run QuantumBank against **PostgreSQL installed on your machine** — not Docker.
 The app still defaults to **SQLite** when `POSTGRES_DATABASE` is off or
 `DATABASE_URL` is unset.
 
-For cloud deploy (Render, GCP Cloud SQL), see [RENDER_DEPLOYMENT.md](../RENDER_DEPLOYMENT.md)
+For cloud deploy (Render, GCP Cloud SQL), see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)
 (dedicated cloud Postgres docs coming soon).
 
 ## Prerequisites

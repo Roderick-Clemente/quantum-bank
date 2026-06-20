@@ -12,7 +12,7 @@ showcases live, refresh-free Split.io variant switching.
 [![Flask](https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Feature Flags](https://img.shields.io/badge/feature%20flags-Split.io-6E56CF)](https://www.split.io/)
 [![CI](https://img.shields.io/badge/CI-Harness-0096D6)](HARNESS.md)
-[![Tests](https://img.shields.io/badge/tests-60%20passing-3FB950)](test/)
+[![Tests](https://img.shields.io/badge/tests-75%20passing-3FB950)](test/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>

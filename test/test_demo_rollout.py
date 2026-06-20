@@ -216,6 +216,7 @@ def test_transfer_still_succeeds_when_rewards_insert_raises(
     monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", "on")
     monkeypatch.setenv("DEMO_FORCE_ROLLOUT_MIGRATION_FAIL", "off")
     _login_demo(client)
+    checking_before, savings_before = _get_checking_to_savings_accounts(client)
 
     import models
 
@@ -225,9 +226,71 @@ def test_transfer_still_succeeds_when_rewards_insert_raises(
     monkeypatch.setattr(models, "try_insert_rewards_points", _raise_rewards_insert)
 
     response = _post_transfer(client, 10.0)
+    checking_after, savings_after = _get_checking_to_savings_accounts(client)
 
     assert response.status_code == 200
     assert b"Transfer successful" in response.data
+    assert checking_after["balance"] == pytest.approx(checking_before["balance"] - 10.0)
+    assert savings_after["balance"] == pytest.approx(savings_before["balance"] + 10.0)
+
+
+@pytest.mark.banking
+def test_transfer_still_succeeds_when_rewards_insert_hits_real_db_error(
+    client, monkeypatch, rollout_env, rewards_ledger_clean
+):
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
+    _login_demo(client)
+    checking_before, savings_before = _get_checking_to_savings_accounts(client)
+
+    import models
+
+    original_sql = models._sql
+
+    def _break_rewards_insert_query(query):
+        if "INSERT INTO rewards_ledger" in query:
+            return (
+                "INSERT INTO rewards_ledger "
+                "(missing_column, source_account_id, target_account_id, points) "
+                "VALUES (?, ?, ?, ?)"
+            )
+        return original_sql(query)
+
+    monkeypatch.setattr(models, "_sql", _break_rewards_insert_query)
+
+    response = _post_transfer(client, 10.0)
+    checking_after, savings_after = _get_checking_to_savings_accounts(client)
+
+    assert response.status_code == 200
+    assert b"Transfer successful" in response.data
+    assert checking_after["balance"] == pytest.approx(checking_before["balance"] - 10.0)
+    assert savings_after["balance"] == pytest.approx(savings_before["balance"] + 10.0)
+
+
+@pytest.mark.banking
+def test_dashboard_shows_runtime_error_banner_when_rewards_read_raises(
+    client, monkeypatch, rollout_env, rewards_ledger_clean
+):
+    _enable_rollout(monkeypatch, schema="on", feature="on", force="off")
+    _login_demo(client)
+    _post_transfer(client, 10.0)
+
+    import models
+
+    original_sql = models._sql
+
+    def _break_rewards_sum_query(query):
+        if "SELECT COALESCE(SUM(points), 0) AS points_total" in query:
+            return "SELECT missing_column FROM rewards_ledger"
+        return original_sql(query)
+
+    monkeypatch.setattr(models, "_sql", _break_rewards_sum_query)
+
+    response = _get_dashboard(client)
+
+    assert response.status_code == 200
+    assert b'data-testid="rewards-points"' not in response.data
+    assert b'data-testid="rewards-banner"' in response.data
+    assert b'data-kind="rollback_runtime_error"' in response.data
 
 
 @pytest.mark.banking

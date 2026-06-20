@@ -117,6 +117,8 @@ def _apply_postgres_schema(conn) -> None:
         sql = handle.read()
     cursor = conn.cursor()
     for statement in _split_sql_statements(sql):
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+        # Trusted local migration SQL only (versioned file in repo), not user input.
         cursor.execute(statement)
     conn.commit()
 

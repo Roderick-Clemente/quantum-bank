@@ -11,7 +11,7 @@ showcases live, refresh-free Split.io variant switching.
 [![Python](https://img.shields.io/badge/python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Feature Flags](https://img.shields.io/badge/feature%20flags-Split.io-6E56CF)](https://www.split.io/)
-[![CI](https://img.shields.io/badge/CI-Harness-0096D6)](HARNESS.md)
+[![CI](https://img.shields.io/badge/CI-Harness-0096D6)](.harness/pipelines/rodbank-pipeline-ci-reference.yaml)
 [![Tests](https://img.shields.io/badge/tests-75%20passing-3FB950)](test/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -57,7 +57,8 @@ as flag-selected variants, with a "demo mode" that pre-loads variants for
 - 🐳 **Dockerized & deployable** — Gunicorn image, `render.yaml` for Render,
   generic `DATABASE_URL` for any managed Postgres.
 - ✅ **Harness CI** — runs the full pytest suite plus OWASP Dependency-Check and
-  OSV SCA scans on every build ([HARNESS.md](HARNESS.md)).
+  OSV SCA scans on every build
+  ([pipeline reference](.harness/pipelines/rodbank-pipeline-ci-reference.yaml)).
 
 ## Screenshots
 
@@ -171,7 +172,7 @@ See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test c
 > [!NOTE]
 > **Postgres matrix in CI (CHUNK_3).** Harness runs pytest twice — SQLite (`POSTGRES_DATABASE=off`)
 > and Background `postgres:16` (`DATABASE_URL` + `POSTGRES_DATABASE=on`) — with separate JUnit
-> reports. See [HARNESS.md](HARNESS.md) and `.harness/pipelines/rodbank-pipeline-ci-reference.yaml`.
+> reports. See [`.harness/pipelines/rodbank-pipeline-ci-reference.yaml`](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
 >
 > This matters because some bugs are **Postgres-only** and a SQLite-only CI run
 > stays green through them — e.g. Postgres returns `created_at` as a `datetime`
@@ -187,7 +188,7 @@ See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test c
 | **Local Postgres** | Native install + `DATABASE_URL` | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) |
 | **Render** | `render.yaml` + Dockerfile; set `SPLIT_API_KEY`, `SECRET_KEY` | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) |
 | **Any managed Postgres** | Set `DATABASE_URL` + `POSTGRES_DATABASE=on` | above |
-| **Kubernetes (lab)** | Manifests under [`.harness/kubernetes/`](.harness/kubernetes/) | [HARNESS.md](HARNESS.md) |
+| **Kubernetes (lab)** | Manifests under [`.harness/kubernetes/`](.harness/kubernetes/) | [`.harness/`](.harness/) |
 
 The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 
@@ -201,7 +202,6 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 | [TECHSUMMARY.md](TECHSUMMARY.md) | Architecture, flags, templates, metrics, file map |
 | [SPLITIO_SETUP.md](SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |
 | [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Deploying to Render (Docker, env vars, custom domain) |
-| [HARNESS.md](HARNESS.md) | Harness CI pipeline, SCA triage, CI vs CD split |
 
 ## Lessons learned (rewards rollout)
 

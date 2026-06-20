@@ -79,5 +79,12 @@ disposition ledger (status report), not a forward-looking plan.
 - [x] All Medium + Low Semgrep findings dispositioned (post-`733bf51f` run reported 0/0/0).
 - [x] Security triage ledger with finding IDs, decisions, and evidence links (this document).
 - [x] SAST break-drill executed and documented (gate flip itself is complete).
+- [x] Info-disclosure: `HARNESS.md` removed from a PUBLIC repo (exposed internal Harness
+      account/org/project/connector IDs + execution links; **no live secrets** — all four
+      historical versions scanned clean). Removed from HEAD; in-repo references repointed to the
+      checked-in pipeline reference YAML. **Not** scrubbed from git history (added in `e6a6a76b`):
+      a force-rewrite of 317 commits on a public, already-indexed repo is high-cost and cannot
+      un-cache forks/mirrors — the IDs are recon-only without credentials. Hygiene follow-up:
+      rotate the read-only GitHub PAT the doc described, since its scope is now public.
 - [ ] Browser verification of the Split.io live-variant demo (SRI hash confirmed matching;
       live variant-switching behind it not yet exercised).

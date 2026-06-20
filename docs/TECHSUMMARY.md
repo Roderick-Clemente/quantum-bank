@@ -5,7 +5,7 @@
 Quantum Bank is a Flask-based banking demo application designed to showcase Split.io feature flagging capabilities. The application demonstrates real-time A/B testing with instant variant switching without page refreshes.
 
 **Tech Stack:**
-- **Backend:** Flask 3.0.3 (Python 3.11)
+- **Backend:** Flask 3.1.3 (Python 3.11)
 - **Database:** SQLite (`quantum_bank.db`)
 - **Feature Flags:** Split.io (server-side SDK v10.5.1 + client-side SDK v11.0.1)
 - **Monitoring:** Prometheus metrics (`/metrics` endpoint)
@@ -271,7 +271,10 @@ const SPLIT_CLIENT_KEY = '5lra47f9qtsf0dcrgcdur3k5sjhfblck0l67';
   - `app_request_count` - Request counter (labeled by method, endpoint, status)
   - `app_request_latency_seconds` - Request latency histogram
 
-**Implementation:** Uses `DispatcherMiddleware` to mount Prometheus WSGI app alongside Flask.
+**Implementation:** A plain Flask `/metrics` route serves output from a tiny,
+dependency-free exposition module (`prometheus_minimal.py`) — no `prometheus_client`
+and no `DispatcherMiddleware`. Per-request count and latency are recorded via
+`before_request`/`after_request` hooks in `app.py`.
 
 ---
 
@@ -484,6 +487,52 @@ QuantumBank/
 
 ---
 
+## Mythos Demo — Replay Architecture (why these branches/tags exist)
+
+The repo carries a set of **saved git refs that are deliberately retained** — do **not**
+prune them as stale. They drive the *"Mythos-Ready: AI Security Remediation with Harness +
+Cursor"* live demo (`.cursor/rules/mythos-demo.mdc`, scripts under `demo/mythos-v1/`).
+
+**Design rationale.** A live demo that asks an AI agent to fix CVEs *from scratch* is risky:
+the generation is **non-deterministic** — different pins, different ordering, occasional
+regressions — so a recorded run can stall or fail unpredictably. Instead the demo **replays
+real, previously-made commits**: faster, reliable, and still authentic (the fixes are genuine
+code from genuine remediation work, just pre-recorded for determinism). The agent narrates as
+if solving it live while a silent `git checkout <tag> -- <files>` stages the known-good diff.
+
+**The story arc it preserves** (a real, instructive outcome worth capturing): the first fix
+pass **resolved 12 findings but introduced 3 new ones** — a common real-world LLM remediation
+failure mode (over-eager upgrades / partial fixes). A future model may one-shot it cleanly;
+keeping the replay lets the demo show *both* the messy-middle and the clean recovery. The
+second pass closes it out (notably: replacing `prometheus_client` rather than chasing CVEs that
+were actually mis-attributed to the Prometheus *server*).
+
+### Canonical refs (load-bearing — the demo replays from the TAGS)
+
+| Tag | Commit | Demo act | Represents |
+|-----|--------|----------|------------|
+| `mythos-v1-act0` | `d57563ef` | baseline | green pipeline, 12 SCA findings unfixed |
+| `mythos-v1-act1` | `dcdec421` | Act 1B | first dep-pin pass (Flask/Werkzeug/Jinja2/pytest/dotenv) |
+| `mythos-v1-act2` | `fbadc81d` | Act 2 | Pygments pin + `prometheus_client` removed for local `/metrics` |
+| `mythos-v1-act3` | `8b20c7e2` | Act 3 | final state (= `main` at demo time) |
+
+The Cursor rule's `git checkout mythos-v1-act1 …` / `…-act2 …` commands depend on these **tags**.
+Tags are immutable, so the demo does not depend on the branches below.
+
+### Saved branches (mirror the tags; named in `demo/mythos-v1/RUNBOOK.md`)
+
+| Branch | Commit | Canonical? |
+|--------|--------|-----------|
+| `pre-security-sca-baseline` | `d57563ef` | ✅ baseline source (RUNBOOK) |
+| `security-issues-fix1` | `dcdec421` | ✅ act1 source (RUNBOOK) |
+| `security-issues-fix2` | `fbadc81d` | ✅ act2 source (RUNBOOK) |
+| `security-issues-original` | `d57563ef` | ⚠️ **duplicate** of `pre-security-sca-baseline`; not referenced — safe to delete |
+| `security-fix-issue` | `dcdec421` | ⚠️ **duplicate** of `security-issues-fix1`; not referenced — safe to delete |
+
+> The two ⚠️ duplicates are retained for now (documented rather than pruned). Because the demo
+> replays from the **tags**, deleting them would not affect the demo — they are simply redundant
+> pointers to commits already preserved by both a tag and a canonical branch.
+
 ## Additional Resources
 
 - **Split.io Setup:** See `SPLITIO_SETUP.md`
@@ -493,6 +542,5 @@ QuantumBank/
 
 ---
 
-**Last Updated:** 2025-01-XX  
-**Maintained By:** [Your Team Name]  
+**Last Updated:** 2026-06-20  
 **Demo Purpose:** Showcase Split.io real-time feature flagging capabilities

@@ -12,7 +12,7 @@ showcases live, refresh-free Split.io variant switching.
 [![Flask](https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Feature Flags](https://img.shields.io/badge/feature%20flags-Split.io-6E56CF)](https://www.split.io/)
 [![CI](https://img.shields.io/badge/CI-Harness-0096D6)](.harness/pipelines/rodbank-pipeline-ci-reference.yaml)
-[![Tests](https://img.shields.io/badge/tests-75%20passing-3FB950)](test/)
+[![Tests](https://img.shields.io/badge/tests-85%20passing-3FB950)](test/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -154,7 +154,7 @@ for flag definitions (`home_page_variant`, `demo_mode`, `postgres_database`).
 ## Testing
 
 ```bash
-pytest                 # 60 tests, SQLite by default
+pytest                 # 85 tests, SQLite by default
 pytest -m models       # data-layer + backend-resolution tests
 pytest -m "api or banking"   # route-level tests
 ```
@@ -199,9 +199,15 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 | [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) | **Native local Postgres** — Homebrew install, env, smoke, tests |
 | [docs/demos/rewards-rollout.md](docs/demos/rewards-rollout.md) | Step-by-step rollout walkthrough (baseline -> fallback -> ready -> forced fail -> recovery) |
 | [docs/demo-fun.md](docs/demo-fun.md) | **Why** the app is shaped this way — demo spectacle vs. a "real" site for testers/AITs |
-| [docs/TECHSUMMARY.md](docs/TECHSUMMARY.md) | Architecture deep-dive — dual-SDK pattern, variant switching, limitations, handoff checklist |
+| [docs/TECHSUMMARY.md](docs/TECHSUMMARY.md) | Architecture deep-dive — dual-SDK pattern, variant switching, limitations, handoff checklist, **+ Mythos demo replay refs** |
 | [docs/SPLITIO_SETUP.md](docs/SPLITIO_SETUP.md) | Split.io keys and feature-flag setup |
 | [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) | Deploying to Render (Docker, env vars, custom domain) |
+
+> ⚠️ **Protected git refs — do not prune.** The `mythos-v1-act0..act3` **tags** and the
+> `pre-security-sca-baseline` / `security-issues-fix1` / `security-issues-fix2` branches drive
+> the Mythos live demo by *replaying real commits* (deterministic > regenerating fixes live).
+> See [docs/TECHSUMMARY.md](docs/TECHSUMMARY.md#mythos-demo--replay-architecture-why-these-branchestags-exist)
+> for the full ref map and which branches are redundant.
 
 ## Lessons learned (rewards rollout)
 

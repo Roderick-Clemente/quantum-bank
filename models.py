@@ -371,8 +371,8 @@ def _insert_returning_id(cursor, sql, params):
         # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
         # Appends a fixed SQL suffix to static in-repo statements; user input stays parameterized.
         pg_sql = _sql(sql).rstrip().rstrip(";") + " RETURNING id"
-        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         # Static in-repo SQL + fixed RETURNING suffix; user data is parameterized via `params`.
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         cursor.execute(pg_sql, params)
         row = cursor.fetchone()
         return row["id"]

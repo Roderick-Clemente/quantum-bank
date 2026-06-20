@@ -94,18 +94,17 @@ def handle_pricing():
         # Better for AI testing tools that need isolated variants
         print("[Pricing] Rendering single template (DEMO MODE OFF - no badge)")
         split_client = get_split_client()
+        template_by_treatment = {
+            "old_home": "pricing_old.html",
+            "dev_home": "pricing_v3.html",
+        }
         template = "pricing_v2.html"  # Default
 
         if split_client:
             user_key = request.remote_addr or "anonymous"
             treatment = split_client.get_treatment(user_key, "home_page_variant")
 
-            if treatment == "old_home":
-                template = "pricing_old.html"
-            elif treatment == "dev_home":
-                template = "pricing_v3.html"
-            else:
-                template = "pricing_v2.html"  # new_home or control
+            template = template_by_treatment.get(treatment, "pricing_v2.html")
 
             print(
                 f"[Pricing] Traditional mode - User {user_key} received treatment: {treatment} -> {template}"

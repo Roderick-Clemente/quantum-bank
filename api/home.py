@@ -94,18 +94,17 @@ def handle_home():
         # Better for AI testing tools that need isolated variants
         print("[Home] Rendering single template (DEMO MODE OFF - no badge)")
         split_client = get_split_client()
+        template_by_treatment = {
+            "old_home": "old_home.html",
+            "dev_home": "home_v3.html",
+        }
         template = "home.html"  # Default
 
         if split_client:
             user_key = request.remote_addr or "anonymous"
             treatment = split_client.get_treatment(user_key, "home_page_variant")
 
-            if treatment == "old_home":
-                template = "old_home.html"
-            elif treatment == "dev_home":
-                template = "home_v3.html"
-            else:
-                template = "home.html"  # new_home or control
+            template = template_by_treatment.get(treatment, "home.html")
 
             print(
                 f"[Home] Traditional mode - User {user_key} received treatment: {treatment} -> {template}"

@@ -195,8 +195,16 @@ def test_database_schema_matches_expected_columns(
     conn = models.get_db()
     cursor = conn.cursor()
     try:
+        sqlite_table_info_sql = {
+            "users": "PRAGMA table_info(users)",
+            "accounts": "PRAGMA table_info(accounts)",
+            "transactions": "PRAGMA table_info(transactions)",
+            "cards": "PRAGMA table_info(cards)",
+        }
         if models.using_postgres():
             for table, expected_columns in _EXPECTED_SCHEMA.items():
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                # Static metadata query with parameterized table name; no user input reaches SQL text.
                 cursor.execute(
                     """
                     SELECT column_name
@@ -213,7 +221,7 @@ def test_database_schema_matches_expected_columns(
                 ), f"{table} has forbidden card columns"
         else:
             for table, expected_columns in _EXPECTED_SCHEMA.items():
-                cursor.execute(f"PRAGMA table_info({table})")
+                cursor.execute(sqlite_table_info_sql[table])
                 actual = {row[1] for row in cursor.fetchall()}
                 missing = expected_columns - actual
                 assert not missing, f"{table} missing columns: {missing}"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import math
 from decimal import Decimal
 
 from db_flags import (
@@ -116,6 +117,8 @@ def _apply_postgres_schema(conn) -> None:
         sql = handle.read()
     cursor = conn.cursor()
     for statement in _split_sql_statements(sql):
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+        # Trusted local migration SQL only (versioned file in repo), not user input.
         cursor.execute(statement)
     conn.commit()
 
@@ -365,7 +368,11 @@ def get_rewards_points_for_user(
 
 def _insert_returning_id(cursor, sql, params):
     if using_postgres():
+        # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
+        # Appends a fixed SQL suffix to static in-repo statements; user input stays parameterized.
         pg_sql = _sql(sql).rstrip().rstrip(";") + " RETURNING id"
+        # Static in-repo SQL + fixed RETURNING suffix; user data is parameterized via `params`.
+        # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
         cursor.execute(pg_sql, params)
         row = cursor.fetchone()
         return row["id"]
@@ -679,8 +686,12 @@ def transfer_money(
     to_account_id: int,
     amount: float,
     description: str = "Transfer",
+    acting_user_id: int | None = None,
 ) -> tuple[bool, str]:
     """Transfer money between accounts."""
+    if amount <= 0 or not math.isfinite(amount):
+        return False, "Invalid amount"
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -700,6 +711,10 @@ def transfer_money(
         if not from_account or not to_account:
             conn.close()
             return False, "Account not found"
+
+        if acting_user_id is not None and from_account["user_id"] != acting_user_id:
+            conn.close()
+            return False, "Forbidden"
 
         if from_account["balance"] < amount:
             conn.close()

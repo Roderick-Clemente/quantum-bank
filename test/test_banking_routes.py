@@ -124,6 +124,51 @@ def test_transfer_post_invalid_amount_shows_error(client):
 
 
 @pytest.mark.banking
+def test_transfer_post_nan_amount_shows_error(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": "nan",
+            "description": "bad-nan",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Invalid amount" in response.data
+
+
+@pytest.mark.banking
+@pytest.mark.parametrize("bad_amount", ["nan", "NaN", "inf"])
+def test_transfer_post_rejects_nan_inf_strings(client, bad_amount):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(checking["id"]),
+            "to_account": str(savings["id"]),
+            "amount": bad_amount,
+            "description": "bad-float-string",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Invalid amount" in response.data
+
+
+@pytest.mark.banking
 def test_transfer_post_zero_amount_shows_error(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 
@@ -280,3 +325,52 @@ def test_transfer_post_small_amount_succeeds(client):
     assert b"Transfer successful" in response.data
     assert checking_after["balance"] == pytest.approx(checking_before - amount)
     assert savings_after["balance"] == pytest.approx(savings_before + amount)
+
+
+@pytest.mark.banking
+def test_transfer_post_rejects_cross_user_source_account(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    import models
+    import uuid
+
+    suffix = uuid.uuid4().hex[:12]
+
+    conn = models.get_db()
+    try:
+        cursor = conn.cursor()
+        attacker_user_id = models._insert_returning_id(
+            cursor,
+            """
+            INSERT INTO users (username, email, full_name)
+            VALUES (?, ?, ?)
+            """,
+            (f"attacker_{suffix}", f"attacker_{suffix}@example.com", "Attacker User"),
+        )
+        attacker_checking_id = models._insert_returning_id(
+            cursor,
+            """
+            INSERT INTO accounts (user_id, account_type, account_number, balance)
+            VALUES (?, ?, ?, ?)
+            """,
+            (attacker_user_id, "checking", f"QB-CHK-{suffix}", 500.0),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    victim_savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/transfer",
+        data={
+            "from_account": str(attacker_checking_id),
+            "to_account": str(victim_savings["id"]),
+            "amount": "10.00",
+            "description": "forbidden transfer",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 403
+    assert b"Forbidden" in response.data

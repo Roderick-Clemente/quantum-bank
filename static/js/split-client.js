@@ -81,8 +81,13 @@ function showVariant(treatment) {
 // Dynamically swap page content without full reload
 function swapPageContent(url) {
     console.log('[Split.io] Fetching new content from:', url);
+    const parsed = new URL(url, window.location.origin);
+    if (parsed.origin !== window.location.origin || !parsed.pathname.startsWith('/')) {
+        console.error('[Split.io] Refusing cross-origin or invalid navigation target:', url);
+        return;
+    }
 
-    fetch(url)
+    fetch(parsed.pathname + parsed.search)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch new content');

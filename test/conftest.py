@@ -26,7 +26,13 @@ def client():
     """HTTP client against the Flask app (same process, no network)."""
     from app import app
 
-    app.config["TESTING"] = True
+    testing_enabled = os.environ.get("FLASK_TESTING", "1").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    app.testing = testing_enabled
     with app.test_client() as c:
         yield c
 

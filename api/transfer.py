@@ -1,5 +1,6 @@
 from flask import render_template, session, redirect, url_for, request, jsonify
 from models import get_accounts_by_user, transfer_money
+import math
 
 
 def handle_transfer():
@@ -37,8 +38,21 @@ def handle_transfer():
             )
 
         try:
-            amount = float(amount)
-            if amount <= 0:
+            amount_str = str(amount).strip().lower()
+            if amount_str in {
+                "nan",
+                "+nan",
+                "-nan",
+                "inf",
+                "+inf",
+                "-inf",
+                "infinity",
+                "+infinity",
+                "-infinity",
+            }:
+                raise ValueError()
+            amount = float(amount_str)
+            if amount <= 0 or not math.isfinite(amount):
                 raise ValueError()
         except ValueError:
             return render_template(
@@ -50,7 +64,11 @@ def handle_transfer():
 
         # Perform transfer
         success, message = transfer_money(
-            int(from_account_id), int(to_account_id), amount, description
+            int(from_account_id),
+            int(to_account_id),
+            amount,
+            description,
+            acting_user_id=user_id,
         )
 
         if success:
@@ -61,11 +79,15 @@ def handle_transfer():
                 success=message,
             )
         else:
-            return render_template(
-                "transfer.html",
-                accounts=source_accounts,
-                all_accounts=accounts,
-                error=message,
+            status = 403 if message == "Forbidden" else 200
+            return (
+                render_template(
+                    "transfer.html",
+                    accounts=source_accounts,
+                    all_accounts=accounts,
+                    error=message,
+                ),
+                status,
             )
 
     return render_template(
@@ -89,17 +111,35 @@ def handle_api_transfer():
         return jsonify({"success": False, "message": "Missing required fields"}), 400
 
     try:
-        amount = float(amount)
-        if amount <= 0:
+        amount_str = str(amount).strip().lower()
+        if amount_str in {
+            "nan",
+            "+nan",
+            "-nan",
+            "inf",
+            "+inf",
+            "-inf",
+            "infinity",
+            "+infinity",
+            "-infinity",
+        }:
+            raise ValueError()
+        amount = float(amount_str)
+        if amount <= 0 or not math.isfinite(amount):
             raise ValueError()
     except ValueError:
         return jsonify({"success": False, "message": "Invalid amount"}), 400
 
     success, message = transfer_money(
-        int(from_account_id), int(to_account_id), amount, description
+        int(from_account_id),
+        int(to_account_id),
+        amount,
+        description,
+        acting_user_id=session["user_id"],
     )
 
     if success:
         return jsonify({"success": True, "message": message})
     else:
-        return jsonify({"success": False, "message": message}), 400
+        status = 403 if message == "Forbidden" else 400
+        return jsonify({"success": False, "message": message}), status

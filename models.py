@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+import math
 from decimal import Decimal
 
 from db_flags import (
@@ -682,6 +683,9 @@ def transfer_money(
     acting_user_id: int | None = None,
 ) -> tuple[bool, str]:
     """Transfer money between accounts."""
+    if amount <= 0 or not math.isfinite(amount):
+        return False, "Invalid amount"
+
     conn = get_db()
     cursor = conn.cursor()
 

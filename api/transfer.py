@@ -1,5 +1,6 @@
 from flask import render_template, session, redirect, url_for, request, jsonify
 from models import get_accounts_by_user, transfer_money
+import math
 
 
 def handle_transfer():
@@ -38,7 +39,7 @@ def handle_transfer():
 
         try:
             amount = float(amount)
-            if amount <= 0:
+            if amount <= 0 or not math.isfinite(amount):
                 raise ValueError()
         except ValueError:
             return render_template(
@@ -98,7 +99,7 @@ def handle_api_transfer():
 
     try:
         amount = float(amount)
-        if amount <= 0:
+        if amount <= 0 or not math.isfinite(amount):
             raise ValueError()
     except ValueError:
         return jsonify({"success": False, "message": "Invalid amount"}), 400

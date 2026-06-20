@@ -156,6 +156,30 @@ def test_api_transfer_invalid_amount_non_numeric_400(client):
 
 
 @pytest.mark.api
+def test_api_transfer_invalid_amount_nan_400(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    accounts = client.get("/api/accounts").get_json()["accounts"]
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": checking["id"],
+            "to_account_id": savings["id"],
+            "amount": "nan",
+            "description": "bad-nan",
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+    assert "Invalid amount" in body.get("message", "")
+
+
+@pytest.mark.api
 def test_api_transfer_insufficient_funds_400(client):
     client.post("/login", data={"username": "demo"}, follow_redirects=True)
 

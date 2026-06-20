@@ -24,3 +24,6 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     security_opt:
       - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /prometheus

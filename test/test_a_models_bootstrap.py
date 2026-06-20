@@ -203,6 +203,8 @@ def test_database_schema_matches_expected_columns(
         }
         if models.using_postgres():
             for table, expected_columns in _EXPECTED_SCHEMA.items():
+                # nosemgrep: python.sqlalchemy.security.sqlalchemy-execute-raw-query.sqlalchemy-execute-raw-query
+                # Static metadata query with parameterized table name; no user input reaches SQL text.
                 cursor.execute(
                     """
                     SELECT column_name

@@ -58,8 +58,19 @@ disposition ledger (status report), not a forward-looking plan.
   `fail_on_severity: medium` in `QuantumBankDemoPipeline` (REMOTE pipeline definition), and
   execution `sU3t1PsaS7aqQYpLCK5wyQ` on `main` commit `d584a17b` validated a gated-green run
   at `High: 0 / Medium: 0 / Low: 0`.
-- **Tracked follow-up (still open):** one-shot deliberate break-drill (e.g. temporary
-  seeded High/Medium finding) to prove the gate fails closed exactly as configured.
+- **Break-drill: COMPLETED (2026-06-20).**
+  - RED validation run `Vezr36PTR2urWloakOfFag` on `chore/sast-break-drill` failed at
+    `Build/Semgrep` with gate message:
+    `fail_on_severity is set to medium and that threshold was reached`.
+  - Seed used for the successful RED validation was a temporary dynamic eval in `app.py`:
+    `eval(os.environ.get("SAST_BREAK_DRILL", ""))`, chosen because the Semgrep
+    eval-detected rule excludes constant-string eval calls.
+  - GREEN recovery run `IlTmpPW1QYOpeU-M7lK7Ew` after reverting/removing the seed on the
+    same branch validated return to gated pass (`High: 0 / Medium: 0 / Low: 0`, pipeline GREEN).
+  - The throwaway seed branch was not merged and was deleted from remote.
+  - Rule-id note: Harness execution logs expose the gate-failure and Semgrep finding counts, but
+    did not emit the rule-id string in the returned snippets; this drill intentionally targeted the
+    Semgrep eval-detected check and produced exactly the expected 2 blocking Medium findings.
 
 ## Exit Criteria (Sprint 1) — status
 
@@ -67,6 +78,6 @@ disposition ledger (status report), not a forward-looking plan.
 - [x] All High-severity Semgrep findings dispositioned (fixed or documented false-positive).
 - [x] All Medium + Low Semgrep findings dispositioned (post-`733bf51f` run reported 0/0/0).
 - [x] Security triage ledger with finding IDs, decisions, and evidence links (this document).
-- [ ] SAST break-drill executed and documented (gate flip itself is complete).
+- [x] SAST break-drill executed and documented (gate flip itself is complete).
 - [ ] Browser verification of the Split.io live-variant demo (SRI hash confirmed matching;
       live variant-switching behind it not yet exercised).

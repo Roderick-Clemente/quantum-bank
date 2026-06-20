@@ -368,6 +368,8 @@ def get_rewards_points_for_user(
 
 def _insert_returning_id(cursor, sql, params):
     if using_postgres():
+        # nosemgrep: python.lang.security.audit.formatted-sql-query.formatted-sql-query
+        # Appends a fixed SQL suffix to static in-repo statements; user input stays parameterized.
         pg_sql = _sql(sql).rstrip().rstrip(";") + " RETURNING id"
         cursor.execute(pg_sql, params)
         row = cursor.fetchone()

@@ -19,8 +19,9 @@ disposition ledger (status report), not a forward-looking plan.
     suppression mis-placement, fixed in `6e221bc3`.
   - `jXI6MBhlSby9ugsYwyFoQA` (QuantumBankDemoPipeline): `High: 0, Medium: 3, Low: 2` — the
     three Mediums dispositioned in `733bf51f`.
-  - Post-`733bf51f` run: reported `High: 0, Medium: 0, Low: 0`. **Stamp the confirming
-    execution ID here** (relayed from the pipeline read; not yet recorded with its artifact ID).
+  - Post-`733bf51f` run `sU3t1PsaS7aqQYpLCK5wyQ` (QuantumBankDemoPipeline, `main`
+    `d584a17b`, Semgrep gate at `fail_on_severity: medium`): Semgrep `High: 0 / Medium: 0 /
+    Low: 0` - pipeline GREEN. Gate is now enforcing (0 gated, not just 0 reported).
 
 > Note: the MCP `security_issue` listing is known stale/inconsistent (APPSEC-950). Per-run
 > closure is judged from the latest execution artifact/logs, not that listing.
@@ -53,15 +54,12 @@ disposition ledger (status report), not a forward-looking plan.
 
 ## SAST Gating Status
 
-- **Reporting-only as of 2026-06-20 by deliberate choice.** The Semgrep step uses
-  `fail_on_severity: critical`; the findings above were severity `error`/High, so they did
-  **not** gate the build. A green pipeline therefore did not prove High=0 — the count was
-  verified per-finding from the execution artifact.
-- **Tracked follow-up (gate flip):** once a run confirms Semgrep `High: 0`, change the
-  Semgrep step to fail the stage on High. Definition-of-done includes a one-shot
-  deliberate-High break-drill (e.g. a temporary `eval()`) proving the gate actually reds,
-  mirroring the CHUNK_5 discipline. Until that flip lands, "0 Highs" is a *reported* number,
-  not a *gated* one.
+- **Gate flip completed as of 2026-06-20.** The Semgrep step now uses
+  `fail_on_severity: medium` in `QuantumBankDemoPipeline` (REMOTE pipeline definition), and
+  execution `sU3t1PsaS7aqQYpLCK5wyQ` on `main` commit `d584a17b` validated a gated-green run
+  at `High: 0 / Medium: 0 / Low: 0`.
+- **Tracked follow-up (still open):** one-shot deliberate break-drill (e.g. temporary
+  seeded High/Medium finding) to prove the gate fails closed exactly as configured.
 
 ## Exit Criteria (Sprint 1) — status
 
@@ -69,6 +67,6 @@ disposition ledger (status report), not a forward-looking plan.
 - [x] All High-severity Semgrep findings dispositioned (fixed or documented false-positive).
 - [x] All Medium + Low Semgrep findings dispositioned (post-`733bf51f` run reported 0/0/0).
 - [x] Security triage ledger with finding IDs, decisions, and evidence links (this document).
-- [ ] SAST gate flipped to fail-on-High + break-drill (tracked follow-up above).
+- [ ] SAST break-drill executed and documented (gate flip itself is complete).
 - [ ] Browser verification of the Split.io live-variant demo (SRI hash confirmed matching;
       live variant-switching behind it not yet exercised).

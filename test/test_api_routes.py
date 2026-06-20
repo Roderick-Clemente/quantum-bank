@@ -230,3 +230,51 @@ def test_api_transfer_small_amount_succeeds(client):
     assert "Transfer successful" in body.get("message", "")
     assert checking_after["balance"] == pytest.approx(checking_before - amount)
     assert savings_after["balance"] == pytest.approx(savings_before + amount)
+
+
+@pytest.mark.api
+def test_api_transfer_rejects_cross_user_source_account(client):
+    client.post("/login", data={"username": "demo"}, follow_redirects=True)
+
+    import models
+
+    conn = models.get_db()
+    try:
+        cursor = conn.cursor()
+        attacker_user_id = models._insert_returning_id(
+            cursor,
+            """
+            INSERT INTO users (username, email, full_name)
+            VALUES (?, ?, ?)
+            """,
+            ("api_attacker", "api_attacker@example.com", "API Attacker"),
+        )
+        attacker_checking_id = models._insert_returning_id(
+            cursor,
+            """
+            INSERT INTO accounts (user_id, account_type, account_number, balance)
+            VALUES (?, ?, ?, ?)
+            """,
+            (attacker_user_id, "checking", "QB-CHK-999998", 500.0),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    victim_accounts = client.get("/api/accounts").get_json()["accounts"]
+    victim_savings = next(a for a in victim_accounts if a["account_type"] == "savings")
+    response = client.post(
+        "/api/transfer",
+        json={
+            "from_account_id": attacker_checking_id,
+            "to_account_id": victim_savings["id"],
+            "amount": 10.0,
+            "description": "forbidden api transfer",
+        },
+    )
+
+    assert response.status_code == 403
+    body = response.get_json()
+    assert body is not None
+    assert body.get("success") is False
+    assert body.get("message") == "Forbidden"

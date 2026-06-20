@@ -679,6 +679,7 @@ def transfer_money(
     to_account_id: int,
     amount: float,
     description: str = "Transfer",
+    acting_user_id: int | None = None,
 ) -> tuple[bool, str]:
     """Transfer money between accounts."""
     conn = get_db()
@@ -700,6 +701,10 @@ def transfer_money(
         if not from_account or not to_account:
             conn.close()
             return False, "Account not found"
+
+        if acting_user_id is not None and from_account["user_id"] != acting_user_id:
+            conn.close()
+            return False, "Forbidden"
 
         if from_account["balance"] < amount:
             conn.close()

@@ -32,7 +32,7 @@ def client():
         "yes",
         "on",
     }
-    app.config["TESTING"] = testing_enabled
+    app.testing = testing_enabled
     with app.test_client() as c:
         yield c
 

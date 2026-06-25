@@ -220,7 +220,7 @@ The production image runs Gunicorn (`Dockerfile`); Render injects `$PORT`.
 
 ```mermaid
 flowchart TD
-    A[Rollout flags<br/>SCHEMA / FEATURE / FORCE_FAIL] --> B[init_db<br/>ensure_rewards_ledger_schema]
+    A[Rollout flags<br/>FME schema+feature / env FORCE_FAIL] --> B[init_db<br/>ensure_rewards_ledger_schema]
     B --> C[_rewards_schema_state<br/>ready/skipped/forced_fail/runtime_error]
 
     T[transfer_money] --> SP[SAVEPOINT around rewards call]

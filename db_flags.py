@@ -1,4 +1,4 @@
-"""Feature-flag resolution for the postgres_database backend switch."""
+"""Feature-flag resolution: postgres_database backend switch + rewards rollout."""
 
 from __future__ import annotations
 
@@ -72,21 +72,57 @@ def _env_enabled(var_name: str, default: str = "off") -> bool:
     return os.environ.get(var_name, default).lower() in _ON_VALUES
 
 
-# Demo-only progressive rollout flags (env-driven on purpose).
-# Defaults are OFF so existing app behavior stays unchanged.
+def _resolve_split_flag(flag_name: str, env_var: str, user_key: str) -> bool:
+    """Resolve a boolean flag: Split treatment → env var → default(off).
+
+    Mirrors ``is_postgres_database_enabled`` resolution order. Split's
+    ``control``/unknown treatments and SDK errors fall through to the env var
+    so the flag still works locally without a configured Split environment.
+    """
+    split_client = get_split_client()
+    if split_client and user_key:
+        try:
+            treatment = split_client.get_treatment(user_key, flag_name)
+            logger.debug("Split.io flag %r = %r (user: %s)", flag_name, treatment, user_key)
+            if treatment in _ON_VALUES:
+                return True
+            if treatment in _OFF_VALUES:
+                return False
+            # 'control' or any unknown treatment → fall through to env var.
+        except Exception as exc:
+            logger.warning(
+                "Error getting Split.io treatment for %s: %s — using env var",
+                flag_name,
+                exc,
+            )
+
+    return _env_enabled(env_var, "off")
+
+
+# Demo-only progressive rollout flags.
+# Resolution: Split.io treatment → env var → default(off). Defaults are OFF so
+# existing app behavior stays unchanged when neither Split nor env is set.
 DEMO_ROLLOUT_SCHEMA_ENV = "DEMO_ROLLOUT_SCHEMA"
 DEMO_ROLLOUT_FEATURE_ENV = "DEMO_ROLLOUT_FEATURE"
 DEMO_FORCE_MIGRATION_FAIL_ENV = "DEMO_FORCE_ROLLOUT_MIGRATION_FAIL"
 
+# Split.io flag names (workspace: created in Harness FME, traffic type "user").
+REWARDS_ROLLOUT_SCHEMA_FLAG = "rewards_rollout_schema"
+REWARDS_ROLLOUT_FEATURE_FLAG = "rewards_rollout_feature"
 
-def is_demo_rollout_schema_enabled() -> bool:
+
+def is_demo_rollout_schema_enabled(user_key: str = "__system__") -> bool:
     """Whether to allow applying the demo schema change (idempotent)."""
-    return _env_enabled(DEMO_ROLLOUT_SCHEMA_ENV, "off")
+    return _resolve_split_flag(
+        REWARDS_ROLLOUT_SCHEMA_FLAG, DEMO_ROLLOUT_SCHEMA_ENV, user_key
+    )
 
 
-def is_demo_rollout_feature_enabled() -> bool:
+def is_demo_rollout_feature_enabled(user_key: str = "__system__") -> bool:
     """Whether the demo feature should read/write the new schema."""
-    return _env_enabled(DEMO_ROLLOUT_FEATURE_ENV, "off")
+    return _resolve_split_flag(
+        REWARDS_ROLLOUT_FEATURE_FLAG, DEMO_ROLLOUT_FEATURE_ENV, user_key
+    )
 
 
 def is_demo_force_rollout_migration_fail() -> bool:

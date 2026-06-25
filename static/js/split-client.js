@@ -4,7 +4,7 @@
  */
 
 // Client-side SDK key (safe to expose in browser)
-const SPLIT_CLIENT_KEY = '5lra47f9qtsf0dcrgcdur3k5sjhfblck0l67';
+const SPLIT_CLIENT_KEY = 'q7am5tulbl0un8gvghn5m9h12mr8iooklakr';
 
 // Track if SDK is already initialized (to prevent re-initialization)
 // Use window object to persist across content swaps

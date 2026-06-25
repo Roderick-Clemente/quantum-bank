@@ -14,7 +14,7 @@ Show that we can:
 
 A safe, reversible **progressive delivery** rollout of a rewards-points feature on a live banking app, exercising five production-grade patterns:
 
-- **Schema-before-feature ordering** — the schema flag (`DEMO_ROLLOUT_SCHEMA`) and the feature flag (`DEMO_ROLLOUT_FEATURE`) are independent, so the feature can be dark-launched and turned on only after the table exists.
+- **Schema-before-feature ordering** — `rewards_rollout_schema` / `rewards_rollout_feature` in Harness FME (env: `DEMO_ROLLOUT_SCHEMA` / `DEMO_ROLLOUT_FEATURE`) are independent, so the feature can be dark-launched and turned on only after the table exists.
 - **Feature flags as a kill switch** — `DEMO_FORCE_ROLLOUT_MIGRATION_FAIL` simulates a failed migration and instantly rolls the UI back to a safe banner with zero redeploy.
 - **Contract testing** — the UI and the test suite agree on stable tokens (`data-testid="rewards-points"`, `data-kind="..."`); a deliberate rename of one token turned CI **red** (proof below), so the contract can't silently drift.
 - **Graceful degradation** — a rewards write that fails at the DB layer is contained by a transaction savepoint ([models.py:748-761](../../models.py#L748-L761)); the core money transfer still commits. The transfer never loses money because of a rewards bug.
@@ -25,6 +25,18 @@ A safe, reversible **progressive delivery** rollout of a rewards-points feature 
 - Run from repo root.
 - Use SQLite for the recording (no Postgres setup required).
 - Start from a clean local DB file so the flow is predictable.
+- **Harness FME (primary):** `SPLIT_API_KEY` in `.env` (Quantum-Dev server key) and client key in `static/js/split-client.js`. Flags `rewards_rollout_schema` and `rewards_rollout_feature` should exist in the workspace with default treatment `off` in Dev.
+- **Env vars (fallback):** `DEMO_ROLLOUT_SCHEMA`, `DEMO_ROLLOUT_FEATURE`, and `DEMO_FORCE_ROLLOUT_MIGRATION_FAIL` still work when Split is unavailable (`control`, SDK error, or no key). CI and local pytest use env only.
+
+### Flag resolution (server)
+
+For schema and feature, `db_flags.py` resolves: **Split treatment → env var → default(`off`)**. An explicit FME `off` wins over a shell `export ...=on` when the SDK is live.
+
+Rollout flags evaluate as user `__system__` (global rollout for the demo, not per logged-in user).
+
+**Restart rule:** `rewards_rollout_schema` is applied in `init_db()` at app startup. After turning schema **on** in Harness, **restart the app** so `rewards_ledger` is created. The feature flag is re-read on each request, but schema migration does not re-run until restart.
+
+`DEMO_FORCE_ROLLOUT_MIGRATION_FAIL` stays **env-only** (presenter kill-switch; no FME flag).
 
 ## Terminal 1: app + logs
 
@@ -32,12 +44,15 @@ A safe, reversible **progressive delivery** rollout of a rewards-points feature 
 rm -f quantum_bank.db app.log
 
 export SECRET_KEY="quantum-bank-demo-key-not-for-prod"
+# Optional fallback if Split is not configured:
 export DEMO_ROLLOUT_SCHEMA=off
 export DEMO_ROLLOUT_FEATURE=off
 export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=off
 
 venv/bin/python app.py 2>&1 | tee app.log
 ```
+
+For the live recording, drive **schema** and **feature** from the Harness FME UI instead of exports. Keep `DEMO_FORCE_ROLLOUT_MIGRATION_FAIL` as an env toggle for the forced-fail beat.
 
 In a second terminal, keep this running during the whole demo:
 
@@ -62,7 +77,7 @@ What the dashboard shows is a pure function of the three flags (resolved in `get
 
 ```mermaid
 flowchart TD
-    A[Dashboard load] --> B{DEMO_ROLLOUT_FEATURE on?}
+    A[Dashboard load] --> B{rewards_rollout_feature on?}
     B -- no --> N["No card, no banner<br/>(baseline / legacy UI)"]
     B -- yes --> C{FORCE_ROLLOUT_MIGRATION_FAIL on?}
     C -- yes --> FF["banner: rollback_forced_fail<br/>rollout failed - points paused,<br/>balances safe"]
@@ -86,13 +101,7 @@ flowchart TD
 
 ### 1) Baseline (all rollout flags off)
 
-Flags already set:
-
-```bash
-export DEMO_ROLLOUT_SCHEMA=off
-export DEMO_ROLLOUT_FEATURE=off
-export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=off
-```
+**Harness:** `rewards_rollout_schema` = off, `rewards_rollout_feature` = off.
 
 In browser:
 - make a transfer (for example checking -> savings, amount `10.00`).
@@ -104,14 +113,7 @@ Audience-visible signals:
 
 ### 2) Feature on before schema (safe fallback)
 
-Restart app with:
-
-```bash
-export DEMO_ROLLOUT_SCHEMA=off
-export DEMO_ROLLOUT_FEATURE=on
-export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=off
-venv/bin/python app.py 2>&1 | tee app.log
-```
+**Harness:** `rewards_rollout_feature` = on, `rewards_rollout_schema` = off (no restart required — feature is read per request).
 
 In browser:
 - log in as `demo` if needed,
@@ -125,12 +127,11 @@ Audience-visible signals:
 
 ### 3) Schema lands (correct order)
 
-Restart app with:
+**Harness:** `rewards_rollout_schema` = on, `rewards_rollout_feature` = on.
+
+**Restart the app** after schema goes on so `init_db()` creates `rewards_ledger`:
 
 ```bash
-export DEMO_ROLLOUT_SCHEMA=on
-export DEMO_ROLLOUT_FEATURE=on
-export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=off
 venv/bin/python app.py 2>&1 | tee app.log
 ```
 
@@ -146,11 +147,9 @@ Audience-visible signals:
 
 ### 4) Forced migration failure (rollback behavior)
 
-Restart app with:
+**Harness:** schema and feature stay on. **Terminal:** enable the env-only kill-switch and restart:
 
 ```bash
-export DEMO_ROLLOUT_SCHEMA=on
-export DEMO_ROLLOUT_FEATURE=on
 export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=on
 venv/bin/python app.py 2>&1 | tee app.log
 ```
@@ -167,11 +166,9 @@ Audience-visible signals:
 
 ### 5) Recovery after failure clears
 
-Restart app with:
+**Harness:** unchanged (schema + feature on). **Terminal:** clear the kill-switch and restart:
 
 ```bash
-export DEMO_ROLLOUT_SCHEMA=on
-export DEMO_ROLLOUT_FEATURE=on
 export DEMO_FORCE_ROLLOUT_MIGRATION_FAIL=off
 venv/bin/python app.py 2>&1 | tee app.log
 ```

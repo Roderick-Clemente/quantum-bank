@@ -3,6 +3,14 @@ import re
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _rollout_flags_env_only(monkeypatch):
+    """Rollout scenarios drive state via env vars; pin Split off so a live
+    SDK key (local .env) can't override the monkeypatched env and make these
+    tests env-dependent. Mirrors the `split_unavailable` boundary fixture."""
+    monkeypatch.setattr("db_flags.get_split_client", lambda: None)
+
+
 def _enable_rollout(monkeypatch, schema: str, feature: str, force: str):
     monkeypatch.setenv("DEMO_ROLLOUT_SCHEMA", schema)
     monkeypatch.setenv("DEMO_ROLLOUT_FEATURE", feature)

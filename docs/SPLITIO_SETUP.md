@@ -46,6 +46,25 @@ This one flag drives **both** the home and pricing pages (see [TECHSUMMARY.md](T
 `sessionStorage` (`split_user_key`). For consistent A/B targeting in production,
 replace it with the authenticated user id.
 
+### rewards_rollout_schema / rewards_rollout_feature
+
+Server-side only (no browser SDK). Progressive delivery for the rewards ledger demo.
+
+**Split names:** `rewards_rollout_schema`, `rewards_rollout_feature`
+
+**Treatments:** `on`, `off` (boolean flags)
+
+**Resolution:** `db_flags.py` — Split treatment → env (`DEMO_ROLLOUT_SCHEMA` / `DEMO_ROLLOUT_FEATURE`) → default `off`.
+
+**User key:** `__system__` (global rollout for the demo; not per logged-in user).
+
+**Presenter notes:**
+- Turn **schema** on, then **restart the app** so `init_db()` creates `rewards_ledger`.
+- **Feature** can flip live on each request; schema migration does not re-run until restart.
+- `DEMO_FORCE_ROLLOUT_MIGRATION_FAIL` remains env-only (no FME flag).
+
+See [demos/rewards-rollout.md](demos/rewards-rollout.md) for the live walkthrough.
+
 ## Split.io Dashboard Setup
 
 1. Go to https://app.split.io
@@ -108,6 +127,7 @@ python app.py
 ### Server-Side
 - **Server initialization:** `split_config.py` - initializes the Split.io server-side SDK
 - **Feature flag usage:** `api/home.py` - checks the feature flag and selects template
+- **Rollout flags:** `db_flags.py` - `rewards_rollout_schema` / `rewards_rollout_feature` (env fallback)
 - **Cleanup:** Automatically destroys the client on app shutdown
 
 ### Client-Side (demo mode)

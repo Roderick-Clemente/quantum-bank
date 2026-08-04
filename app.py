@@ -38,6 +38,7 @@ from api.api_endpoints import (  # noqa: E402
     handle_api_transactions,
     handle_api_account_detail,
 )
+from api.llms_txt import handle_llms_txt  # noqa: E402
 from models import init_db  # noqa: E402
 from split_config import init_split, destroy_split  # noqa: E402
 
@@ -96,6 +97,11 @@ def metrics():
         format_metrics(),
         mimetype="text/plain; version=0.0.4; charset=utf-8",
     )
+
+
+@app.route("/llms.txt")
+def llms_txt():
+    return handle_llms_txt()
 
 
 @app.route("/demo")

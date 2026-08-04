@@ -53,4 +53,4 @@ def handle_llms_txt():
     Response with an explicit mimetype, rather than returning a
     bare string (which Flask would otherwise default to text/html).
     """
-    return Response(LLMS_TXT_BODY, mimetype="text/plain; charset=utf-8")
+    return Response(LLMS_TXT_BODY, mimetype="text/plain")

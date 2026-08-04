@@ -53,3 +53,10 @@ via PR (merge commit = one-command rollback). Run complete — thank you, clean 
 
 ## Aug 3 — LOOP STOOD DOWN
 PR #9 merged (a1050a87), live on qbank.dev, verified. Run complete. Worker may exit.
+
+## Aug 4 — orchestrator: Unit 4 assigned (fix Grok's dangling-sitemap finding)
+ai-discovery MERGED to main (a1050a87), live on qbank.dev, three-way validated (Opus/Grok/Kimi
+all ACCEPT). Grok's one real finding: robots.txt + /llms-full.txt point at /sitemap.xml which
+404s. Unit 4 = build a real /sitemap.xml so the promise is true. Branch off CURRENT main
+(a1050a87), NOT the old pilot branch. Full prompt delivered to builder. Same method: valid-RED,
+one commit, real output, hard STOP. I verify, then Rod gates merge.

@@ -42,3 +42,11 @@ Kimi (blind cross-family validator) = ACCEPT, no defects, but 3 nits. Rod: fix a
    sibling /llms.txt test.
 Full prompt delivered directly to builder. Method unchanged: real RED/GREEN in commit, push to
 pilot/ai-discovery, hard STOP after. I'll verify, then Rod gates the merge.
+
+## Aug 3 — orchestrator: Unit 3 VERDICT ACCEPT, merging via PR
+Verified independently (not trusting self-report): 20/20 pass; narrative REMOVED from live
+/llms-full.txt body (no "the worker"/"pilot"/"gated by human"), replaced with clean "see
+/llms.txt"; /metrics charset doc line gone; new `fictional` assert PROVEN to fail on real
+removal (my first proof was invalid — mutated to a superstring; redone correctly). /metrics,
+/llms.txt, /robots.txt untouched. All 3 Kimi nits fixed. Merging pilot/ai-discovery to main
+via PR (merge commit = one-command rollback). Run complete — thank you, clean work.

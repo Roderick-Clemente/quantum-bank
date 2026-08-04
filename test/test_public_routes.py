@@ -134,3 +134,19 @@ def test_metrics_exposes_prometheus_text(client):
     assert response.status_code == 200
     data = response.get_data(as_text=True)
     assert "# HELP" in data or "# TYPE" in data
+
+
+@pytest.mark.public
+def test_llms_txt_returns_plain_text(client):
+    response = client.get("/llms.txt")
+    assert response.status_code == 200
+    ct = response.headers.get("Content-Type", "")
+    assert ct.startswith("text/plain")
+    body = response.get_data(as_text=True)
+    # Required substrings per pilot spec acceptance criteria.
+    assert "Quantum Bank" in body
+    assert "Split.io" in body
+    # Demo-disclaimer: spec calls for "a fictional bank for Rod Clemente & friends' demos".
+    low = body.lower()
+    assert "demo" in low
+    assert "fictional" in low

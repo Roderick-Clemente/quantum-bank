@@ -154,3 +154,18 @@ def test_llms_txt_returns_plain_text(client):
     low = body.lower()
     assert "demo" in low
     assert "fictional" in low
+
+
+@pytest.mark.public
+def test_robots_txt_serves_plain_text(client):
+    response = client.get("/robots.txt")
+    assert response.status_code == 200
+    ct = response.headers.get("Content-Type", "")
+    assert ct.startswith("text/plain")
+    # Same Werkzeug-charset lock as /llms.txt: exactly one charset= token.
+    assert ct.lower().count("charset=") == 1
+    body = response.get_data(as_text=True)
+    # Required substrings per spec acceptance criteria.
+    assert "User-agent: *" in body
+    assert "Allow: /" in body
+    assert "llms.txt" in body

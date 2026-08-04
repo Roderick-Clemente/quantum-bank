@@ -40,6 +40,7 @@ from api.api_endpoints import (  # noqa: E402
 )
 from api.llms_txt import handle_llms_txt  # noqa: E402
 from api.robots_txt import handle_robots_txt  # noqa: E402
+from api.llms_full_txt import handle_llms_full_txt  # noqa: E402
 from models import init_db  # noqa: E402
 from split_config import init_split, destroy_split  # noqa: E402
 
@@ -108,6 +109,11 @@ def llms_txt():
 @app.route("/robots.txt")
 def robots_txt():
     return handle_robots_txt()
+
+
+@app.route("/llms-full.txt")
+def llms_full_txt():
+    return handle_llms_full_txt()
 
 
 @app.route("/demo")

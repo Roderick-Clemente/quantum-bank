@@ -169,3 +169,27 @@ def test_robots_txt_serves_plain_text(client):
     assert "User-agent: *" in body
     assert "Allow: /" in body
     assert "llms.txt" in body
+
+
+@pytest.mark.public
+def test_llms_full_txt_serves_expanded_manifest(client):
+    response = client.get("/llms-full.txt")
+    assert response.status_code == 200
+    ct = response.headers.get("Content-Type", "")
+    assert ct.startswith("text/plain")
+    # Lock the doubled-charset fix: exactly one charset= token.
+    assert ct.lower().count("charset=") == 1
+    body = response.get_data(as_text=True)
+    # Required substrings per spec: full name, platform, demo disclaimer.
+    assert "Quantum Bank" in body
+    assert "Split.io" in body
+    assert "demo" in body.lower()
+
+    # /llms-full.txt must be the FULL manifest, not a copy of /llms.txt.
+    # Cross-fetch both surfaces inside the same test session and assert
+    # len(full) strictly greater than len(short).
+    short = client.get("/llms.txt").get_data(as_text=True)
+    assert len(body) > len(short), (
+        f"/llms-full.txt must be longer than /llms.txt — "
+        f"got full={len(body)} short={len(short)}"
+    )

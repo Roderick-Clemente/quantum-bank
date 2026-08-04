@@ -142,6 +142,10 @@ def test_llms_txt_returns_plain_text(client):
     assert response.status_code == 200
     ct = response.headers.get("Content-Type", "")
     assert ct.startswith("text/plain")
+    # Lock the doubled-charset fix: Werkzeug adds one charset for text/plain.
+    # A regression to mimetype="text/plain; charset=utf-8" would produce two
+    # (RFC-7231-malformed) and must fail here. See /metrics for the un-fixed defect.
+    assert ct.lower().count("charset=") == 1
     body = response.get_data(as_text=True)
     # Required substrings per pilot spec acceptance criteria.
     assert "Quantum Bank" in body

@@ -197,3 +197,60 @@ def test_llms_full_txt_serves_expanded_manifest(client):
         f"/llms-full.txt must be longer than /llms.txt — "
         f"got full={len(body)} short={len(short)}"
     )
+
+
+@pytest.mark.public
+def test_sitemap_xml_serves_valid_urlset(client):
+    import xml.etree.ElementTree as ET
+    response = client.get("/sitemap.xml")
+    assert response.status_code == 200
+    ct = response.headers.get("Content-Type", "")
+    assert ct.startswith("application/xml"), ct
+    # Bare mimetype pattern (same discipline as /llms.txt + /robots.txt):
+    # Werkzeug must emit exactly one charset= token. A regression that
+    # types 'application/xml; charset=utf-8' (the doubled-charset trap)
+    # would surface as count == 2 here.
+    assert ct.lower().count("charset=") == 1, ct
+    body = response.get_data(as_text=True)
+    # Body must parse as XML. Raises on malformed structures.
+    ET.fromstring(body)
+    # Required canonical surfaces must be present.
+    assert "https://qbank.dev/" in body, "sitemap must list the homepage"
+    assert "https://qbank.dev/llms.txt" in body, "sitemap must reference /llms.txt"
+    # Exclusion locks: gated routes, /api/*, /metrics, /robots, /sitemap
+    # itself, /*-static variants must NOT appear.
+    assert "/api/" not in body, "sitemap must not include /api/* routes"
+    assert "/dashboard" not in body, "sitemap must not include /dashboard (session-gated)"
+    assert "/metrics" not in body, ("sitemap must not include /metrics "
+                                    "(Prometheus; out of crawl surface)")
+    assert "/robots.txt" not in body, "sitemap must not self-reference /robots.txt"
+
+
+@pytest.mark.public
+def test_robots_sitemap_promise_resolves(client):
+    """Tighten the robots.txt promise: the Sitemap: URL it advertises
+    must actually resolve on the same host. Closes Grok's dangling-
+    reference finding (robots.txt + /llms-full.txt pointed at /sitemap.xml
+    but that route 404'd).
+
+    Reads the Sitemap URL straight from robots.txt (no hard-coding the
+    path in the test) and probes that path on the Flask test client.
+    Rewriting robots.txt's Sitemap: line to any other URL is fine —
+    this test must keep working for any URL.
+    """
+    import re
+    from urllib.parse import urlparse
+    r = client.get("/robots.txt")
+    assert r.status_code == 200
+    body = r.get_data(as_text=True)
+    m = re.search(r"^\s*Sitemap:\s*(\S+)\s*$", body, re.MULTILINE | re.IGNORECASE)
+    assert m, "robots.txt is missing a Sitemap: directive"
+    sitemap_url = m.group(1)
+    path = urlparse(sitemap_url).path
+    assert path.startswith("/"), f"unexpected Sitemap URL: {sitemap_url!r}"
+    r2 = client.get(path)
+    assert r2.status_code == 200, (
+        f"robots.txt advertises Sitemap: {sitemap_url} but GET {path} "
+        f"returned {r2.status_code} — Grok's dangling-reference finding is "
+        f"back on the live surface."
+    )

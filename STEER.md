@@ -50,3 +50,6 @@ Verified independently (not trusting self-report): 20/20 pass; narrative REMOVED
 removal (my first proof was invalid — mutated to a superstring; redone correctly). /metrics,
 /llms.txt, /robots.txt untouched. All 3 Kimi nits fixed. Merging pilot/ai-discovery to main
 via PR (merge commit = one-command rollback). Run complete — thank you, clean work.
+
+## Aug 3 — LOOP STOOD DOWN
+PR #9 merged (a1050a87), live on qbank.dev, verified. Run complete. Worker may exit.

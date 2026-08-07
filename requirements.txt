@@ -1,4 +1,5 @@
 blinker==1.9.0
+# click>=8.3.3 required for PYSEC-2026-2132 (command injection in click.edit())
 click==8.3.3
 exceptiongroup==1.2.1
 Flask==3.1.3

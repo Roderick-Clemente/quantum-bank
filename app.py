@@ -31,6 +31,7 @@ from api.four_o_four import handle_404  # noqa: E402
 from api.login import handle_login, handle_logout  # noqa: E402
 from api.dashboard import handle_dashboard  # noqa: E402
 from api.accounts import handle_account_detail  # noqa: E402
+from api.profile import handle_profile  # noqa: E402
 from api.transfer import handle_transfer, handle_api_transfer  # noqa: E402
 from api.transactions import handle_transactions  # noqa: E402
 from api.api_endpoints import (  # noqa: E402
@@ -220,6 +221,11 @@ def dashboard():
 @app.route("/account")
 def account():
     return handle_account_detail()
+
+
+@app.route("/profile")
+def profile():
+    return handle_profile()
 
 
 @app.route("/transfer", methods=["GET", "POST"])

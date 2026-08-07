@@ -1,6 +1,5 @@
 from flask import Response
 
-
 LLMS_TXT_BODY = """\
 Quantum Bank
 ============

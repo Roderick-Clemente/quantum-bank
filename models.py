@@ -25,6 +25,12 @@ MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "migrations")
 REWARDS_LEDGER_TABLE = "rewards_ledger"
 REWARDS_POINTS_PER_10_DOLLARS = 1
 
+PROFILE_DEMO_ADDRESS = os.environ.get(
+    "PROFILE_DEMO_ADDRESS",
+    "Captain's Quarters, Deck 9, USS Enterprise NCC-1701-D",
+)
+# TODO: migrate to an address column once a migration runner exists (plan-v1 §3 fork (b))
+
 _backend_logged = False
 _rewards_schema_state = "unknown"
 
@@ -573,6 +579,23 @@ def get_user_by_username(username: str) -> dict | None:
     user = cursor.fetchone()
     conn.close()
     return _row_to_dict(user)
+
+
+def get_user_profile(user_id: int) -> dict | None:
+    """Get a user's profile by ID, returning only the display-safe columns."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        _sql("SELECT username, email, full_name FROM users WHERE id = ?"),
+        (user_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        return None
+    profile = _row_to_dict(row)
+    profile["address"] = PROFILE_DEMO_ADDRESS
+    return profile
 
 
 def get_accounts_by_user(user_id: int) -> list[dict]:

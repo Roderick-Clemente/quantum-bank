@@ -434,7 +434,7 @@ def create_sample_data(conn):
         INSERT INTO users (username, email, full_name)
         VALUES (?, ?, ?)
         """,
-        ("demo", "demo@quantumbank.com", "Demo User"),
+        ("demo", "jpicard@starfleet.fed", "Jean-Luc Picard"),
     )
 
     checking_id = _insert_returning_id(

@@ -335,41 +335,8 @@ def get_rewards_points_for_user(
     user_id: int,
 ) -> tuple[int | None, str | None]:
     """Return (points, banner) for UI; rolls back to legacy mode on errors."""
-    if not is_demo_rollout_feature_enabled():
-        return None, None
-
-    conn = get_db()
-    cursor = conn.cursor()
-    schema_state = _resolve_rewards_schema_state(cursor)
-
-    if schema_state == "forced_fail":
-        conn.close()
-        return None, "rollback_forced_fail"
-    if schema_state in {"skipped", "unknown"}:
-        conn.close()
-        return None, "legacy_no_schema"
-    if schema_state == "runtime_error":
-        conn.close()
-        return None, "rollback_runtime_error"
-
-    try:
-        cursor.execute(
-            _sql("""
-                SELECT COALESCE(SUM(points), 0) AS points_total
-                FROM rewards_ledger
-                WHERE user_id = ?
-                """),
-            (user_id,),
-        )
-        row = cursor.fetchone()
-        data = _row_to_dict(row) or {}
-        points_total = data.get("points_total")
-        return int(points_total) if points_total is not None else 0, None
-    except Exception as exc:
-        logger.warning("rewards.rollout.read_failed reason=%s", exc.__class__.__name__)
-        return None, "rollback_runtime_error"
-    finally:
-        conn.close()
+    from dao.transaction_dao import TransactionDAO
+    return TransactionDAO().get_rewards_for_user(user_id)
 
 
 def _insert_returning_id(cursor, sql, params):
@@ -597,40 +564,14 @@ def get_account_by_id(account_id: int) -> dict | None:
 
 def get_transactions_by_account(account_id: int, limit: int = 10) -> list[dict]:
     """Get transactions for an account."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        _sql("""
-            SELECT * FROM transactions
-            WHERE account_id = ?
-            ORDER BY created_at DESC
-            LIMIT ?
-            """),
-        (account_id, limit),
-    )
-    transactions = cursor.fetchall()
-    conn.close()
-    return [_normalize_row(_row_to_dict(trans)) for trans in transactions]
+    from dao.transaction_dao import TransactionDAO
+    return TransactionDAO().get_by_account(account_id, limit)
 
 
 def get_all_transactions_by_user(user_id: int, limit: int = 20) -> list[dict]:
     """Get all transactions for a user across all accounts."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        _sql("""
-            SELECT t.*, a.account_type, a.account_number
-            FROM transactions t
-            JOIN accounts a ON t.account_id = a.id
-            WHERE a.user_id = ?
-            ORDER BY t.created_at DESC
-            LIMIT ?
-            """),
-        (user_id, limit),
-    )
-    transactions = cursor.fetchall()
-    conn.close()
-    return [_normalize_row(_row_to_dict(trans)) for trans in transactions]
+    from dao.transaction_dao import TransactionDAO
+    return TransactionDAO().get_by_user(user_id, limit)
 
 
 def get_cards_by_account(account_id: int) -> list[dict]:

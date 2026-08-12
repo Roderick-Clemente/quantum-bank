@@ -585,25 +585,14 @@ def get_user_profile(user_id: int) -> dict | None:
 
 def get_accounts_by_user(user_id: int) -> list[dict]:
     """Get all accounts for a user."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        _sql("SELECT * FROM accounts WHERE user_id = ? ORDER BY created_at"),
-        (user_id,),
-    )
-    accounts = cursor.fetchall()
-    conn.close()
-    return [_normalize_row(_row_to_dict(account)) for account in accounts]
+    from dao.account_dao import AccountDAO
+    return AccountDAO().get_by_user(user_id)
 
 
 def get_account_by_id(account_id: int) -> dict | None:
     """Get account by ID."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(_sql("SELECT * FROM accounts WHERE id = ?"), (account_id,))
-    account = cursor.fetchone()
-    conn.close()
-    return _normalize_row(_row_to_dict(account))
+    from dao.account_dao import AccountDAO
+    return AccountDAO().get_by_id(account_id)
 
 
 def get_transactions_by_account(account_id: int, limit: int = 10) -> list[dict]:
@@ -646,12 +635,8 @@ def get_all_transactions_by_user(user_id: int, limit: int = 20) -> list[dict]:
 
 def get_cards_by_account(account_id: int) -> list[dict]:
     """Get cards for an account."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(_sql("SELECT * FROM cards WHERE account_id = ?"), (account_id,))
-    cards = cursor.fetchall()
-    conn.close()
-    return [_normalize_row(_row_to_dict(card)) for card in cards]
+    from dao.account_dao import AccountDAO
+    return AccountDAO().get_cards_by_account(account_id)
 
 
 def create_transaction(

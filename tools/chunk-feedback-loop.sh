@@ -24,6 +24,9 @@ echo ""
 # Create review directory
 mkdir -p "$REVIEW_DIR"
 
+# Single turn (executor controls loop)
+turn=1
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Running validators in $PILOT_ROOT..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -33,6 +36,7 @@ python3 "$FRAMEWORK_ROOT/tools/orchestrate-review.py" \
   --framework-root "$FRAMEWORK_ROOT" \
   --pilot-root "$PILOT_ROOT" \
   --pilot-python "$(which python3)" \
+  --validator-cwd "$PILOT_ROOT" \
   --test-file "test/test_banking_routes.py" \
   --lock-file "phase-0/locks/test_banking_routes.lock" \
   --prompt-file <(cat <<'PROMPT'
@@ -43,7 +47,11 @@ Review the committed code diff. Does it:
 - Avoid circular imports?
 - Have no stubs/experiment code?
 
-Verdict: ACCEPT or REJECT with blockers.
+You MUST end your response with one of these lines:
+VERDICT: ACCEPT
+VERDICT: REJECT
+
+Do not use other wording for the verdict.
 PROMPT
 ) \
   --review-output-dir "$REVIEW_DIR" \

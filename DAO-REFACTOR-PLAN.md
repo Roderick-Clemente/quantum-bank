@@ -42,19 +42,26 @@
 Extract all database interactions from `models.py` into a clean DAO layer, improving testability and maintainability without changing any external behavior.
 
 ### Success Criteria
-- [ ] All database calls routed through DAO interface (zero direct `conn.cursor()` calls outside DAO)
+- [ ] All database calls routed through DAO interface (zero direct `conn.cursor()` calls outside DAO or test fixtures)
 - [ ] All existing tests pass unchanged (pytest test/ -v shows 100% green)
 - [ ] Manual smoke test confirms login, dashboard, transfer, profile all work
 - [ ] DAO layer supports both SQLite and PostgreSQL backends (existing flag still works)
 - [ ] Connection management centralized in DAO (no scattered `conn.close()` calls)
+- [ ] Test helpers documented: `_insert_returning_id`, `_row_to_dict`, `_sql` locations clarified
 
-### Out of Scope
+### Scope (Revised After Adversarial Review)
+**IN SCOPE:**
+- User, Account, Transaction, Transfer+Rewards query/mutation functions (CHUNK_1-4)
+- Schema initialization and seed data functions (CHUNK_5a — NEW)
+- All helper functions: `_insert_returning_id`, `_row_to_dict`, `_normalize_row`, `_sql` → move to DAO
+- Fix existing resource leaks (add try/finally to all DAO functions)
+
+**OUT OF SCOPE:**
 - **Performance tuning:** No connection pooling, query optimization, or caching
-- **Schema changes:** No new tables, columns, or migrations
+- **Schema changes:** No new tables, columns, or migrations (only refactor existing)
 - **Business logic changes:** No new features, validations, or workflows
 - **API changes:** No route modifications, request/response format changes
-- **Test additions:** Only modify tests if they break due to import changes (should be rare)
-- **Error handling improvements:** Keep existing error patterns
+- **Error handling improvements:** Keep existing error patterns (except add try/finally for safety)
 - **Frontend changes:** No template, static file, or JavaScript modifications
 
 ---
@@ -111,6 +118,20 @@ Extract all database interactions from `models.py` into a clean DAO layer, impro
 | **PostgreSQL regressions** | MEDIUM | MEDIUM | SQLite works but Postgres queries fail (_sql helper) | • Test both backends (local SQLite + CI Postgres)<br>• Keep `_sql()` helper in DAO layer<br>• Verify `using_postgres()` flag respected |
 | **Import cycles** | LOW | MEDIUM | Circular imports between models.py and new DAO | • DAO depends on nothing except stdlib + db drivers<br>• Models imports DAO (one direction only)<br>• Use dependency injection if needed |
 | **Performance regression** | LOW | LOW | Connection overhead or N+1 queries introduced | • Out of scope for this sprint<br>• Monitor /metrics endpoint if deployed<br>• Note any obvious issues for future sprint |
+
+### Helper Function Lifecycle (Resolved After Adversarial Review)
+
+Adversarial review flagged ambiguity about where helper functions live after refactor. Clarified:
+
+| Helper | Current Location | After Refactor | Test Compatibility |
+|--------|------------------|-----------------|-------------------|
+| `get_db()` | models.py:45-55 | Move to `dao/connection_manager.py`, re-export from models.py | ✅ Tests call `models.get_db()` — still works |
+| `_sql(query)` | models.py:58-60 | Move to `dao/base_dao.py`, re-export from models.py | ✅ Tests call `models._sql()` — still works |
+| `_insert_returning_id()` | models.py:375-386 | Move to `dao/base_dao.py`, re-export from models.py | ✅ Tests call `models._insert_returning_id()` — still works |
+| `_row_to_dict()` | models.py:62-69 | Move to `dao/base_dao.py`, re-export from models.py | ✅ Tests call `models._row_to_dict()` — still works |
+| `_normalize_row()` | models.py:70-79 | Move to `dao/base_dao.py` (private, used only inside DAO) | ✅ Internal only |
+
+**Key point:** All helpers move to DAO layer, but `models.py` re-exports them for backward compatibility. **Zero test changes required.**
 
 ### Affected Systems
 

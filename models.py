@@ -573,29 +573,14 @@ def create_sample_data(conn):
 
 def get_user_by_username(username: str) -> dict | None:
     """Get user by username."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(_sql("SELECT * FROM users WHERE username = ?"), (username,))
-    user = cursor.fetchone()
-    conn.close()
-    return _row_to_dict(user)
+    from dao.user_dao import UserDAO
+    return UserDAO().get_by_username(username)
 
 
 def get_user_profile(user_id: int) -> dict | None:
     """Get a user's profile by ID, returning only the display-safe columns."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        _sql("SELECT username, email, full_name FROM users WHERE id = ?"),
-        (user_id,),
-    )
-    row = cursor.fetchone()
-    conn.close()
-    if row is None:
-        return None
-    profile = _row_to_dict(row)
-    profile["address"] = PROFILE_DEMO_ADDRESS
-    return profile
+    from dao.user_dao import UserDAO
+    return UserDAO().get_profile(user_id)
 
 
 def get_accounts_by_user(user_id: int) -> list[dict]:

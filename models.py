@@ -418,103 +418,37 @@ def transfer_money(
     description: str = "Transfer",
     acting_user_id: int | None = None,
 ) -> tuple[bool, str]:
-    """Transfer money between accounts."""
+    """Transfer money between accounts (wrapper owns connection lifecycle)."""
+    from dao.write_dao import WriteDAO
+
     if amount <= 0 or not math.isfinite(amount):
         return False, "Invalid amount"
 
     conn = get_db()
-    cursor = conn.cursor()
 
     try:
-        cursor.execute(
-            _sql("SELECT balance, account_number, user_id FROM accounts WHERE id = ?"),
-            (from_account_id,),
+        ok, message = WriteDAO().transfer_internal(
+            conn,
+            from_account_id,
+            to_account_id,
+            amount,
+            description,
+            acting_user_id,
         )
-        from_account = _normalize_row(_row_to_dict(cursor.fetchone()))
-
-        cursor.execute(
-            _sql("SELECT account_number FROM accounts WHERE id = ?"),
-            (to_account_id,),
-        )
-        to_account = _row_to_dict(cursor.fetchone())
-
-        if not from_account or not to_account:
-            conn.close()
-            return False, "Account not found"
-
-        if acting_user_id is not None and from_account["user_id"] != acting_user_id:
-            conn.close()
-            return False, "Forbidden"
-
-        if from_account["balance"] < amount:
-            conn.close()
-            return False, "Insufficient funds"
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-                VALUES (?, ?, ?, ?, ?)
-                """),
-            (
-                from_account_id,
-                "transfer",
-                -amount,
-                description,
-                to_account["account_number"],
-            ),
-        )
-
-        cursor.execute(
-            _sql("UPDATE accounts SET balance = balance - ? WHERE id = ?"),
-            (amount, from_account_id),
-        )
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-                VALUES (?, ?, ?, ?, ?)
-                """),
-            (
-                to_account_id,
-                "transfer",
-                amount,
-                description,
-                from_account["account_number"],
-            ),
-        )
-
-        cursor.execute(
-            _sql("UPDATE accounts SET balance = balance + ? WHERE id = ?"),
-            (amount, to_account_id),
-        )
-
-        # Demo-only progressive delivery:
-        # writes to rewards_ledger should succeed only after schema is applied.
-        cursor.execute("SAVEPOINT rewards_savepoint")
-        try:
-            try_insert_rewards_points(
-                conn=conn,
-                cursor=cursor,
-                user_id=from_account["user_id"],
-                source_account_id=from_account_id,
-                target_account_id=to_account_id,
-                transfer_amount=amount,
-            )
-            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
-        except Exception:
-            # Load-bearing: on an aborted PG txn, RELEASE SAVEPOINT raises InFailedSqlTransaction;
-            # this except IS the rollback path, not just cleanup — do not collapse this try/except.
-            cursor.execute("ROLLBACK TO SAVEPOINT rewards_savepoint")
-            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
-
-        conn.commit()
-        conn.close()
-        return True, "Transfer successful"
+        if ok:
+            conn.commit()
+        else:
+            # Validation rejections wrote nothing, so this is a no-op in
+            # practice; it is explicit rather than relying on each driver's
+            # close-without-commit behavior.
+            conn.rollback()
+        return ok, message
 
     except (
         Exception
     ):  # pragma: no cover — defensive; hard to trigger without DB corruption
         logger.exception("transfer_money failed")
         conn.rollback()
-        conn.close()
         return False, "Transfer failed"
+    finally:
+        conn.close()

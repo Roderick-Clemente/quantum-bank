@@ -182,6 +182,7 @@ def _create_sqlite_schema(cursor) -> None:
 def _rewards_ledger_table_exists(cursor) -> bool:
     """Check if rewards_ledger table exists."""
     from dao.helper_dao import HelperDAO
+
     return HelperDAO.rewards_ledger_table_exists(cursor)
 
 

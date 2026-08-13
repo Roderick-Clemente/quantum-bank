@@ -15,21 +15,27 @@ class HelperDAO:
     def rewards_ledger_table_exists(cursor) -> bool:
         """Check if rewards_ledger table exists."""
         if using_postgres():
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
                     WHERE table_schema = 'public'
                       AND table_name = %s
                 ) AS exists
-            """, (REWARDS_LEDGER_TABLE,))
+            """,
+                (REWARDS_LEDGER_TABLE,),
+            )
             row = cursor.fetchone()
             return bool(row[0]) if row else False
         else:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT 1
                 FROM sqlite_master
                 WHERE type = 'table'
                   AND name = ?
                 LIMIT 1
-            """, (REWARDS_LEDGER_TABLE,))
+            """,
+                (REWARDS_LEDGER_TABLE,),
+            )
             return cursor.fetchone() is not None

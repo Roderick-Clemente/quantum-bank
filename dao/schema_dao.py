@@ -6,7 +6,9 @@ from dao.base_dao import BaseDAO
 class SchemaDAO(BaseDAO):
     """Schema creation, validation, and sample data seeding."""
 
-    def ensure_rewards_ledger_schema(self, conn, cursor=None, *, commit: bool = True) -> str:
+    def ensure_rewards_ledger_schema(
+        self, conn, cursor=None, *, commit: bool = True
+    ) -> str:
         """Ensure the rewards ledger table exists (idempotent).
 
         Returns a small status string for UX/demo messaging.
@@ -100,10 +102,13 @@ class SchemaDAO(BaseDAO):
             global_state["rewards_schema_state"] = "runtime_error"
             logger.warning("Rewards schema setup failed at startup: %s", exc)
 
-        logger.info("rewards.rollout.schema state=%s", global_state["rewards_schema_state"])
+        logger.info(
+            "rewards.rollout.schema state=%s", global_state["rewards_schema_state"]
+        )
 
         # Update module-level state
         import models
+
         models._rewards_schema_state = global_state["rewards_schema_state"]
 
         cursor.execute(_sql("SELECT COUNT(*) FROM users"))

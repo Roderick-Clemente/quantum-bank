@@ -1,6 +1,5 @@
 from flask import Response
 
-
 LLMS_FULL_TXT_BODY = """\
 Quantum Bank — full manifest
 ============================

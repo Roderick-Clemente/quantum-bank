@@ -9,6 +9,7 @@ class UserDAO(BaseDAO):
     def get_by_username(self, username: str) -> dict | None:
         """Get user by username."""
         from models import _sql, _row_to_dict
+
         self.get_connection()
         try:
             self.cursor.execute(

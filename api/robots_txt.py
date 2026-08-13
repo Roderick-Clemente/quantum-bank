@@ -1,6 +1,5 @@
 from flask import Response
 
-
 ROBOTS_TXT_BODY = """\
 User-agent: *
 

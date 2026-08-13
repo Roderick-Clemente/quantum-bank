@@ -202,6 +202,7 @@ def test_llms_full_txt_serves_expanded_manifest(client):
 @pytest.mark.public
 def test_sitemap_xml_serves_valid_urlset(client):
     import xml.etree.ElementTree as ET
+
     response = client.get("/sitemap.xml")
     assert response.status_code == 200
     ct = response.headers.get("Content-Type", "")
@@ -220,9 +221,12 @@ def test_sitemap_xml_serves_valid_urlset(client):
     # Exclusion locks: gated routes, /api/*, /metrics, /robots, /sitemap
     # itself, /*-static variants must NOT appear.
     assert "/api/" not in body, "sitemap must not include /api/* routes"
-    assert "/dashboard" not in body, "sitemap must not include /dashboard (session-gated)"
-    assert "/metrics" not in body, ("sitemap must not include /metrics "
-                                    "(Prometheus; out of crawl surface)")
+    assert (
+        "/dashboard" not in body
+    ), "sitemap must not include /dashboard (session-gated)"
+    assert "/metrics" not in body, (
+        "sitemap must not include /metrics " "(Prometheus; out of crawl surface)"
+    )
     assert "/robots.txt" not in body, "sitemap must not self-reference /robots.txt"
 
 
@@ -240,6 +244,7 @@ def test_robots_sitemap_promise_resolves(client):
     """
     import re
     from urllib.parse import urlparse
+
     r = client.get("/robots.txt")
     assert r.status_code == 200
     body = r.get_data(as_text=True)

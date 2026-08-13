@@ -136,7 +136,7 @@ class SchemaDAO(BaseDAO):
             (user_id, "checking", "QB-CHK-100001", 5420.50),
         )
 
-        savings_id = _insert_returning_id(
+        _insert_returning_id(
             cursor,
             """
             INSERT INTO accounts (user_id, account_type, account_number, balance)
@@ -145,7 +145,7 @@ class SchemaDAO(BaseDAO):
             (user_id, "savings", "QB-SAV-200001", 12850.75),
         )
 
-        credit_id = _insert_returning_id(
+        _insert_returning_id(
             cursor,
             """
             INSERT INTO accounts (user_id, account_type, account_number, balance)

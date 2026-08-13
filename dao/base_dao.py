@@ -1,12 +1,6 @@
 """Base Data Access Object with connection management."""
 
-from models import _sql, _row_to_dict, _normalize_row  # noqa: F401
-
-
-def get_db():
-    """Get a database connection."""
-    from models import get_db as models_get_db
-    return models_get_db()
+from models import get_db as models_get_db
 
 
 class BaseDAO:
@@ -18,7 +12,7 @@ class BaseDAO:
 
     def get_connection(self):
         """Acquire database connection and cursor."""
-        self.conn = get_db()
+        self.conn = models_get_db()
         self.cursor = self.conn.cursor()
         return self.cursor
 

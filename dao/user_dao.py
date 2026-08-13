@@ -1,6 +1,6 @@
 """User data access object."""
 
-from dao.base_dao import BaseDAO, _sql, _row_to_dict
+from dao.base_dao import BaseDAO
 
 
 class UserDAO(BaseDAO):
@@ -8,6 +8,7 @@ class UserDAO(BaseDAO):
 
     def get_by_username(self, username: str) -> dict | None:
         """Get user by username."""
+        from models import _sql, _row_to_dict
         self.get_connection()
         try:
             self.cursor.execute(
@@ -21,7 +22,7 @@ class UserDAO(BaseDAO):
 
     def get_profile(self, user_id: int) -> dict | None:
         """Get user profile (display-safe columns only)."""
-        from models import PROFILE_DEMO_ADDRESS as address_constant
+        from models import PROFILE_DEMO_ADDRESS as address_constant, _sql, _row_to_dict
 
         self.get_connection()
         try:

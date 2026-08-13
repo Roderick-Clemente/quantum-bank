@@ -10,7 +10,6 @@ from decimal import Decimal
 
 from db_flags import (
     is_demo_force_rollout_migration_fail,
-    is_demo_rollout_feature_enabled,
     is_demo_rollout_schema_enabled,
     is_postgres_database_enabled,
 )
@@ -284,30 +283,17 @@ def try_insert_rewards_points(
     target_account_id: int,
     transfer_amount: float,
 ) -> bool:
-    """Attempt to insert rewards points; never fail the core transfer."""
-    if not is_demo_rollout_feature_enabled():
-        return False
-    if _resolve_rewards_schema_state(cursor) != "ready":
-        return False
+    """Attempt to insert rewards points; never fail the core transfer (wrapper, injectable seam)."""
+    from dao.write_dao import WriteDAO
 
-    try:
-        points = _compute_reward_points(transfer_amount)
-        if points <= 0:
-            return False
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO rewards_ledger
-                    (user_id, source_account_id, target_account_id, points)
-                VALUES (?, ?, ?, ?)
-                """),
-            (user_id, source_account_id, target_account_id, points),
-        )
-        logger.info("rewards.rollout.write_succeeded points=%s", points)
-        return True
-    except Exception as exc:
-        logger.warning("rewards.rollout.write_failed reason=%s", exc.__class__.__name__)
-        return False
+    return WriteDAO().insert_rewards_points(
+        conn=conn,
+        cursor=cursor,
+        user_id=user_id,
+        source_account_id=source_account_id,
+        target_account_id=target_account_id,
+        transfer_amount=transfer_amount,
+    )
 
 
 def get_rewards_points_for_user(

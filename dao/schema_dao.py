@@ -156,10 +156,10 @@ class SchemaDAO(BaseDAO):
 
         cursor.execute(
             _sql("""
-                INSERT INTO cards (account_id, card_number, cardholder_name, expiry_month, expiry_year)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO cards (account_id, card_type, card_last4, expiry_date)
+                VALUES (?, ?, ?, ?)
                 """),
-            (checking_id, "4532-1111-2222-3333", "Jean-Luc Picard", 12, 2027),
+            (checking_id, "debit", "1234", "12/2026"),
         )
 
         conn.commit()

@@ -94,4 +94,4 @@ All remaining cursor calls are either:
 ---
 
 **CHUNK_3 Complete**  
-**Signed:** CHUNK_3 commit f3200747 (updated with artifacts)
+**Signed:** CHUNK_3 commit 321d5bf4 (artifacts added; experiment files cleaned in next commit)

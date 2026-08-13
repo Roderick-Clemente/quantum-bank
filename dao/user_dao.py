@@ -2,8 +2,6 @@
 
 from dao.base_dao import BaseDAO, _sql, _row_to_dict
 
-PROFILE_DEMO_ADDRESS = None  # Will import at runtime if needed
-
 
 class UserDAO(BaseDAO):
     """User query operations (read-only)."""

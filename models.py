@@ -180,33 +180,9 @@ def _create_sqlite_schema(cursor) -> None:
 
 
 def _rewards_ledger_table_exists(cursor) -> bool:
-    if using_postgres():
-        cursor.execute(
-            _sql("""
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                      AND table_name = ?
-                ) AS exists
-                """),
-            (REWARDS_LEDGER_TABLE,),
-        )
-        row = cursor.fetchone()
-        data = _row_to_dict(row) or {}
-        return bool(data.get("exists"))
-
-    cursor.execute(
-        """
-        SELECT 1
-        FROM sqlite_master
-        WHERE type = 'table'
-          AND name = ?
-        LIMIT 1
-        """,
-        (REWARDS_LEDGER_TABLE,),
-    )
-    return cursor.fetchone() is not None
+    """Check if rewards_ledger table exists."""
+    from dao.helper_dao import HelperDAO
+    return HelperDAO.rewards_ledger_table_exists(cursor)
 
 
 def ensure_rewards_ledger_schema(
@@ -279,13 +255,15 @@ def _resolve_rewards_schema_state(cursor=None) -> str:
         _rewards_schema_state = "skipped"
         return _rewards_schema_state
 
+    from dao.helper_dao import HelperDAO
+
     own_conn = None
     if cursor is None:
         own_conn = get_db()
         cursor = own_conn.cursor()
     try:
         _rewards_schema_state = (
-            "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+            "ready" if HelperDAO().rewards_ledger_table_exists(cursor) else "skipped"
         )
         return _rewards_schema_state
     except Exception:

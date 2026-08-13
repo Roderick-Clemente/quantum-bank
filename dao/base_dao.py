@@ -1,6 +1,6 @@
 """Base Data Access Object with connection management."""
 
-from models import _sql, _row_to_dict, _normalize_row
+from models import _sql, _row_to_dict, _normalize_row  # noqa: F401
 
 
 def get_db():

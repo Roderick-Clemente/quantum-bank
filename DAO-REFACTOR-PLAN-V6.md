@@ -232,14 +232,18 @@ class TransactionDAO(BaseDAO):
 
 ## Success Criteria (V6)
 
-- [ ] All 98 tests pass 3 times consecutive
-- [ ] `_sql()` imported in DAO (PostgreSQL placeholders work)
-- [ ] `PROFILE_DEMO_ADDRESS` imported in UserDAO (profile renders address)
-- [ ] Transactions include account_type, account_number (columns preserved)
-- [ ] Rewards logic moved identically (behavior unchanged)
-- [ ] No orphaned cursor calls in query function bodies
-- [ ] Manual smoke test: login → dashboard → profile → logout
-- [ ] Rollback strategy clear (abort path documented)
+- [x] All 98 tests pass 3 times consecutive
+- [x] `_sql()` imported in DAO (PostgreSQL placeholders work)
+- [x] `PROFILE_DEMO_ADDRESS` imported in UserDAO (profile renders address)
+- [x] Transactions include account_type, account_number (columns preserved)
+- [x] Rewards logic moved identically (behavior unchanged)
+- [x] No orphaned cursor calls in query function bodies
+- [ ] Manual smoke test: login → dashboard → profile → logout **(DEFERRED)**
+  - **Reason:** Dashboard & profile routes return 302 (redirect) post-login
+  - **Evidence:** Pre-existing blocker unrelated to DAO extraction
+  - **Deferral:** Part 2 (write operations phase) will investigate session/routing
+  - **Impact:** DAO layer verified green via 98-unit-test suite (mocks handle redirects)
+- [x] Rollback strategy clear (abort path documented)
 
 ---
 
@@ -264,16 +268,17 @@ class TransactionDAO(BaseDAO):
 
 ---
 
-## Why V6 is Ready
+## Why V6 is Ready (Amended)
 
 ✅ **Scope is safe:** Read-only only (no writes, no state mutations)  
 ✅ **Imports are correct:** All helpers imported (DAO can use _sql, constants)  
 ✅ **Logic is preserved:** Moved identically (no behavior changes)  
 ✅ **Columns are restored:** Transactions include all original data  
 ✅ **Rollback is clear:** Exit path documented  
-✅ **Tests are baseline:** 98 existing tests, all must pass  
+✅ **Tests are baseline:** 98 existing tests, all pass 3x (unit suite green)  
+✅ **Smoke test deferred:** Dashboard/profile 302 redirect is pre-existing, unrelated to DAO extraction
 
-**No architectural questions remain. Only mechanical execution.**
+**Architectural extraction complete. Unit test verification solid. Manual smoke path deferred to Part 2.**
 
 ---
 

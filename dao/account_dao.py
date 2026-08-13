@@ -1,6 +1,6 @@
 """Account data access object."""
 
-from dao.base_dao import BaseDAO, _sql, _row_to_dict, _normalize_row
+from dao.base_dao import BaseDAO
 
 
 class AccountDAO(BaseDAO):
@@ -8,6 +8,7 @@ class AccountDAO(BaseDAO):
 
     def get_by_user(self, user_id: int) -> list[dict]:
         """Get all accounts for a user."""
+        from models import _sql, _row_to_dict, _normalize_row
         self.get_connection()
         try:
             self.cursor.execute(
@@ -21,6 +22,7 @@ class AccountDAO(BaseDAO):
 
     def get_by_id(self, account_id: int) -> dict | None:
         """Get account by ID."""
+        from models import _sql, _row_to_dict, _normalize_row
         self.get_connection()
         try:
             self.cursor.execute(
@@ -34,6 +36,7 @@ class AccountDAO(BaseDAO):
 
     def get_cards_by_account(self, account_id: int) -> list[dict]:
         """Get cards for an account."""
+        from models import _sql, _row_to_dict, _normalize_row
         self.get_connection()
         try:
             self.cursor.execute(

@@ -1,0 +1,36 @@
+{
+  "ts": "2026-08-13T14:53:36Z",
+  "branch": "feature/quantum-dao-part-2",
+  "evidence_source": "in-session",
+  "treatment": false,
+  "run_label": "chunk-4-a72ee733",
+  "validators": [
+    {
+      "label": "grok-4.5",
+      "model": "grok-4.5",
+      "family": "grok-family",
+      "verdict": "ACCEPT",
+      "ok": true,
+      "tokens_in": 55497,
+      "tokens_out": 12140,
+      "cache_read": 267264,
+      "thinking": 4668,
+      "retry_count": 0,
+      "stray_writes": null
+    },
+    {
+      "label": "gemini-3.1-pro-preview",
+      "model": "gemini-3.1-pro-preview",
+      "family": "gemini-family",
+      "verdict": "ACCEPT",
+      "ok": true,
+      "tokens_in": 78805,
+      "tokens_out": 3366,
+      "cache_read": 19924,
+      "thinking": 904,
+      "retry_count": 0,
+      "stray_writes": null
+    }
+  ],
+  "gate": "ACCEPT"
+}

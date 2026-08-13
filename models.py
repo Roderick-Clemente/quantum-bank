@@ -356,7 +356,9 @@ def _insert_returning_id(cursor, sql, params):
 
 def init_db():
     """Initialize the database with tables and sample data."""
-    global _rewards_schema_state
+    from dao.schema_dao import SchemaDAO
+
+    SchemaDAO().init()
     conn = get_db()
     cursor = conn.cursor()
 
@@ -394,7 +396,9 @@ def init_db():
 
 def create_sample_data(conn):
     """Create sample users and accounts for demo purposes."""
-    cursor = conn.cursor()
+    from dao.schema_dao import SchemaDAO
+
+    SchemaDAO().seed(conn)
 
     user_id = _insert_returning_id(
         cursor,

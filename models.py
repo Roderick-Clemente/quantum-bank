@@ -336,6 +336,7 @@ def get_rewards_points_for_user(
 ) -> tuple[int | None, str | None]:
     """Return (points, banner) for UI; rolls back to legacy mode on errors."""
     from dao.transaction_dao import TransactionDAO
+
     return TransactionDAO().get_rewards_for_user(user_id)
 
 
@@ -541,42 +542,49 @@ def create_sample_data(conn):
 def get_user_by_username(username: str) -> dict | None:
     """Get user by username."""
     from dao.user_dao import UserDAO
+
     return UserDAO().get_by_username(username)
 
 
 def get_user_profile(user_id: int) -> dict | None:
     """Get a user's profile by ID, returning only the display-safe columns."""
     from dao.user_dao import UserDAO
+
     return UserDAO().get_profile(user_id)
 
 
 def get_accounts_by_user(user_id: int) -> list[dict]:
     """Get all accounts for a user."""
     from dao.account_dao import AccountDAO
+
     return AccountDAO().get_by_user(user_id)
 
 
 def get_account_by_id(account_id: int) -> dict | None:
     """Get account by ID."""
     from dao.account_dao import AccountDAO
+
     return AccountDAO().get_by_id(account_id)
 
 
 def get_transactions_by_account(account_id: int, limit: int = 10) -> list[dict]:
     """Get transactions for an account."""
     from dao.transaction_dao import TransactionDAO
+
     return TransactionDAO().get_by_account(account_id, limit)
 
 
 def get_all_transactions_by_user(user_id: int, limit: int = 20) -> list[dict]:
     """Get all transactions for a user across all accounts."""
     from dao.transaction_dao import TransactionDAO
+
     return TransactionDAO().get_by_user(user_id, limit)
 
 
 def get_cards_by_account(account_id: int) -> list[dict]:
     """Get cards for an account."""
     from dao.account_dao import AccountDAO
+
     return AccountDAO().get_cards_by_account(account_id)
 
 

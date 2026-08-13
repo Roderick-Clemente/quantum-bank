@@ -1,6 +1,5 @@
 from flask import Response
 
-
 # Canonical public GET pages, in the priority order they should appear
 # in the sitemap. Sourced from app.py route definitions at this branch
 # (origin/main = a1050a87), every path listed resolves to 200 on a fresh
@@ -17,15 +16,15 @@ from flask import Response
 SITEMAP_URLSET = (
     '<?xml version="1.0" encoding="UTF-8"?>\n'
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    '  <url><loc>https://qbank.dev/</loc></url>\n'
-    '  <url><loc>https://qbank.dev/about</loc></url>\n'
-    '  <url><loc>https://qbank.dev/pricing</loc></url>\n'
-    '  <url><loc>https://qbank.dev/demo</loc></url>\n'
-    '  <url><loc>https://qbank.dev/hello</loc></url>\n'
-    '  <url><loc>https://qbank.dev/time</loc></url>\n'
-    '  <url><loc>https://qbank.dev/llms.txt</loc></url>\n'
-    '  <url><loc>https://qbank.dev/llms-full.txt</loc></url>\n'
-    '</urlset>\n'
+    "  <url><loc>https://qbank.dev/</loc></url>\n"
+    "  <url><loc>https://qbank.dev/about</loc></url>\n"
+    "  <url><loc>https://qbank.dev/pricing</loc></url>\n"
+    "  <url><loc>https://qbank.dev/demo</loc></url>\n"
+    "  <url><loc>https://qbank.dev/hello</loc></url>\n"
+    "  <url><loc>https://qbank.dev/time</loc></url>\n"
+    "  <url><loc>https://qbank.dev/llms.txt</loc></url>\n"
+    "  <url><loc>https://qbank.dev/llms-full.txt</loc></url>\n"
+    "</urlset>\n"
 )
 
 

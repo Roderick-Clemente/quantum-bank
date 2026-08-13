@@ -6,11 +6,10 @@ from dao.base_dao import BaseDAO
 class TransactionDAO(BaseDAO):
     """Transaction query operations (read-only)."""
 
-    def get_by_account(
-        self, account_id: int, limit: int = 10
-    ) -> list[dict]:
+    def get_by_account(self, account_id: int, limit: int = 10) -> list[dict]:
         """Get transactions for an account."""
         from models import _sql, _row_to_dict, _normalize_row
+
         self.get_connection()
         try:
             self.cursor.execute(
@@ -23,17 +22,14 @@ class TransactionDAO(BaseDAO):
                 (account_id, limit),
             )
             transactions = self.cursor.fetchall()
-            return [
-                _normalize_row(_row_to_dict(trans)) for trans in transactions
-            ]
+            return [_normalize_row(_row_to_dict(trans)) for trans in transactions]
         finally:
             self.close()
 
-    def get_by_user(
-        self, user_id: int, limit: int = 20
-    ) -> list[dict]:
+    def get_by_user(self, user_id: int, limit: int = 20) -> list[dict]:
         """Get all transactions for a user across all accounts."""
         from models import _sql, _row_to_dict, _normalize_row
+
         self.get_connection()
         try:
             self.cursor.execute(
@@ -48,15 +44,11 @@ class TransactionDAO(BaseDAO):
                 (user_id, limit),
             )
             transactions = self.cursor.fetchall()
-            return [
-                _normalize_row(_row_to_dict(trans)) for trans in transactions
-            ]
+            return [_normalize_row(_row_to_dict(trans)) for trans in transactions]
         finally:
             self.close()
 
-    def get_rewards_for_user(
-        self, user_id: int
-    ) -> tuple[int | None, str | None]:
+    def get_rewards_for_user(self, user_id: int) -> tuple[int | None, str | None]:
         """Return (points, banner) for UI; rolls back to legacy mode on errors."""
         from db_flags import is_demo_rollout_feature_enabled
         from models import logger, _resolve_rewards_schema_state, _sql, _row_to_dict

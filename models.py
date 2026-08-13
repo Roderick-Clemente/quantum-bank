@@ -403,32 +403,26 @@ def create_transaction(
     description: str,
     recipient: str = "",
 ) -> int:
-    """Create a new transaction."""
+    """Create a new transaction (wrapper owns connection lifecycle)."""
+    from dao.write_dao import WriteDAO
+
     conn = get_db()
-    cursor = conn.cursor()
-
-    transaction_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (account_id, transaction_type, amount, description, recipient),
-    )
-
-    cursor.execute(
-        _sql("""
-            UPDATE accounts
-            SET balance = balance + ?
-            WHERE id = ?
-            """),
-        (amount, account_id),
-    )
-
-    conn.commit()
-    conn.close()
-
-    return transaction_id
+    try:
+        transaction_id = WriteDAO().create_transaction_internal(
+            conn,
+            account_id,
+            transaction_type,
+            amount,
+            description,
+            recipient,
+        )
+        conn.commit()
+        return transaction_id
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def transfer_money(

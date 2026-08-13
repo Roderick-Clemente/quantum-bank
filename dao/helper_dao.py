@@ -14,6 +14,8 @@ class HelperDAO:
     @staticmethod
     def rewards_ledger_table_exists(cursor) -> bool:
         """Check if rewards_ledger table exists."""
+        from models import _row_to_dict
+
         if using_postgres():
             cursor.execute(
                 """
@@ -25,8 +27,8 @@ class HelperDAO:
             """,
                 (REWARDS_LEDGER_TABLE,),
             )
-            row = cursor.fetchone()
-            return bool(row[0]) if row else False
+            row = _row_to_dict(cursor.fetchone())
+            return bool(row.get("exists")) if row else False
         else:
             cursor.execute(
                 """

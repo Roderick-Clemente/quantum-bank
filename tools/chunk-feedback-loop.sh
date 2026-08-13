@@ -23,6 +23,25 @@ echo ""
 
 # Create review directory
 mkdir -p "$REVIEW_DIR"
+PROMPT_FILE="$REVIEW_DIR/review-prompt.md"
+
+# The orchestrator launches each validator in a child process. A process-
+# substitution path is not durable across that boundary, so stage the prompt
+# as a normal review artifact.
+cat > "$PROMPT_FILE" <<'PROMPT'
+Review the committed code diff. Does it:
+- Match the approved plan?
+- Preserve existing behavior?
+- Pass all tests?
+- Avoid circular imports?
+- Have no stubs/experiment code?
+
+You MUST end your response with one of these lines:
+VERDICT: ACCEPT
+VERDICT: REJECT
+
+Do not use other wording for the verdict.
+PROMPT
 
 # Single turn (executor controls loop)
 turn=1
@@ -39,21 +58,7 @@ python3 "$FRAMEWORK_ROOT/tools/orchestrate-review.py" \
   --validator-cwd "$PILOT_ROOT" \
   --test-file "test/test_banking_routes.py" \
   --lock-file "phase-0/locks/test_banking_routes.lock" \
-  --prompt-file <(cat <<'PROMPT'
-Review the committed code diff. Does it:
-- Match the approved plan?
-- Preserve existing behavior?
-- Pass all tests?
-- Avoid circular imports?
-- Have no stubs/experiment code?
-
-You MUST end your response with one of these lines:
-VERDICT: ACCEPT
-VERDICT: REJECT
-
-Do not use other wording for the verdict.
-PROMPT
-) \
+  --prompt-file "$PROMPT_FILE" \
   --review-output-dir "$REVIEW_DIR" \
   --validators "grok-4.5:xai:grok-family,gemini-3.1-pro-preview:google:gemini-family" \
   --auto-level high || true  # Don't fail on REJECT exit

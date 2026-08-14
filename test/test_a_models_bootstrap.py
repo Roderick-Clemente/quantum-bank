@@ -160,6 +160,126 @@ def test_transfer_money_small_amount_updates_balances(
     assert savings_after["balance"] == pytest.approx(before_savings + amount)
 
 
+# The four tests below cover transfer_money()'s rejection paths. Those paths
+# previously closed the connection inline; after the WriteDAO extraction the
+# models wrapper owns the connection and rolls back before closing, so each
+# test asserts both the returned reason and that no balance moved.
+
+
+@pytest.mark.models
+def test_transfer_money_rejects_unknown_destination_account(
+    monkeypatch, split_unavailable, tmp_path
+):
+    """A missing destination account is refused and leaves the source untouched."""
+    _configure_backend(monkeypatch, tmp_path)
+    models = _reload_models()
+    models.init_db()
+
+    user = models.get_user_by_username("demo")
+    accounts = models.get_accounts_by_user(user["id"])
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    before = checking["balance"]
+
+    missing_account_id = 10_000_000
+    ok, message = models.transfer_money(
+        checking["id"], missing_account_id, 10.0, "pytest"
+    )
+
+    assert ok is False
+    assert message == "Account not found"
+    assert models.get_account_by_id(checking["id"])["balance"] == pytest.approx(before)
+
+
+@pytest.mark.models
+def test_transfer_money_rejects_transfer_from_another_users_account(
+    monkeypatch, split_unavailable, tmp_path
+):
+    """acting_user_id that does not own the source account is refused."""
+    _configure_backend(monkeypatch, tmp_path)
+    models = _reload_models()
+    models.init_db()
+
+    user = models.get_user_by_username("demo")
+    accounts = models.get_accounts_by_user(user["id"])
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+
+    before_checking = checking["balance"]
+    before_savings = savings["balance"]
+    impostor_user_id = user["id"] + 999
+
+    ok, message = models.transfer_money(
+        checking["id"],
+        savings["id"],
+        10.0,
+        "pytest",
+        acting_user_id=impostor_user_id,
+    )
+
+    assert ok is False
+    assert message == "Forbidden"
+    assert models.get_account_by_id(checking["id"])["balance"] == pytest.approx(
+        before_checking
+    )
+    assert models.get_account_by_id(savings["id"])["balance"] == pytest.approx(
+        before_savings
+    )
+
+
+@pytest.mark.models
+def test_transfer_money_rejects_insufficient_funds(
+    monkeypatch, split_unavailable, tmp_path
+):
+    """A transfer larger than the source balance is refused, not partially applied."""
+    _configure_backend(monkeypatch, tmp_path)
+    models = _reload_models()
+    models.init_db()
+
+    user = models.get_user_by_username("demo")
+    accounts = models.get_accounts_by_user(user["id"])
+    checking = next(a for a in accounts if a["account_type"] == "checking")
+    savings = next(a for a in accounts if a["account_type"] == "savings")
+
+    before_checking = checking["balance"]
+    before_savings = savings["balance"]
+
+    ok, message = models.transfer_money(
+        checking["id"], savings["id"], before_checking + 1_000.0, "pytest"
+    )
+
+    assert ok is False
+    assert message == "Insufficient funds"
+    assert models.get_account_by_id(checking["id"])["balance"] == pytest.approx(
+        before_checking
+    )
+    assert models.get_account_by_id(savings["id"])["balance"] == pytest.approx(
+        before_savings
+    )
+
+
+@pytest.mark.models
+def test_transfer_money_rejects_nonfinite_amount_without_opening_connection(
+    monkeypatch, split_unavailable, tmp_path
+):
+    """Amount validation short-circuits before any connection is acquired.
+
+    Asserted by making get_db() raise: if the wrapper reached it, the test fails.
+    """
+    _configure_backend(monkeypatch, tmp_path)
+    models = _reload_models()
+    models.init_db()
+
+    def _fail_if_called():
+        raise AssertionError("transfer_money opened a connection for an invalid amount")
+
+    monkeypatch.setattr(models, "get_db", _fail_if_called)
+
+    for bad_amount in (float("inf"), float("nan"), 0.0, -5.0):
+        ok, message = models.transfer_money(1, 2, bad_amount, "pytest")
+        assert ok is False
+        assert message == "Invalid amount"
+
+
 @pytest.mark.models
 def test_demo_seeded_cards_expose_masked_last4_only(
     monkeypatch, split_unavailable, tmp_path

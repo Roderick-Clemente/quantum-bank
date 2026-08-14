@@ -10,7 +10,6 @@ from decimal import Decimal
 
 from db_flags import (
     is_demo_force_rollout_migration_fail,
-    is_demo_rollout_feature_enabled,
     is_demo_rollout_schema_enabled,
     is_postgres_database_enabled,
 )
@@ -180,33 +179,10 @@ def _create_sqlite_schema(cursor) -> None:
 
 
 def _rewards_ledger_table_exists(cursor) -> bool:
-    if using_postgres():
-        cursor.execute(
-            _sql("""
-                SELECT EXISTS (
-                    SELECT 1
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public'
-                      AND table_name = ?
-                ) AS exists
-                """),
-            (REWARDS_LEDGER_TABLE,),
-        )
-        row = cursor.fetchone()
-        data = _row_to_dict(row) or {}
-        return bool(data.get("exists"))
+    """Check if rewards_ledger table exists."""
+    from dao.helper_dao import HelperDAO
 
-    cursor.execute(
-        """
-        SELECT 1
-        FROM sqlite_master
-        WHERE type = 'table'
-          AND name = ?
-        LIMIT 1
-        """,
-        (REWARDS_LEDGER_TABLE,),
-    )
-    return cursor.fetchone() is not None
+    return HelperDAO.rewards_ledger_table_exists(cursor)
 
 
 def ensure_rewards_ledger_schema(
@@ -279,13 +255,15 @@ def _resolve_rewards_schema_state(cursor=None) -> str:
         _rewards_schema_state = "skipped"
         return _rewards_schema_state
 
+    from dao.helper_dao import HelperDAO
+
     own_conn = None
     if cursor is None:
         own_conn = get_db()
         cursor = own_conn.cursor()
     try:
         _rewards_schema_state = (
-            "ready" if _rewards_ledger_table_exists(cursor) else "skipped"
+            "ready" if HelperDAO().rewards_ledger_table_exists(cursor) else "skipped"
         )
         return _rewards_schema_state
     except Exception:
@@ -305,30 +283,17 @@ def try_insert_rewards_points(
     target_account_id: int,
     transfer_amount: float,
 ) -> bool:
-    """Attempt to insert rewards points; never fail the core transfer."""
-    if not is_demo_rollout_feature_enabled():
-        return False
-    if _resolve_rewards_schema_state(cursor) != "ready":
-        return False
+    """Attempt to insert rewards points; never fail the core transfer (wrapper, injectable seam)."""
+    from dao.write_dao import WriteDAO
 
-    try:
-        points = _compute_reward_points(transfer_amount)
-        if points <= 0:
-            return False
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO rewards_ledger
-                    (user_id, source_account_id, target_account_id, points)
-                VALUES (?, ?, ?, ?)
-                """),
-            (user_id, source_account_id, target_account_id, points),
-        )
-        logger.info("rewards.rollout.write_succeeded points=%s", points)
-        return True
-    except Exception as exc:
-        logger.warning("rewards.rollout.write_failed reason=%s", exc.__class__.__name__)
-        return False
+    return WriteDAO().insert_rewards_points(
+        conn=conn,
+        cursor=cursor,
+        user_id=user_id,
+        source_account_id=source_account_id,
+        target_account_id=target_account_id,
+        transfer_amount=transfer_amount,
+    )
 
 
 def get_rewards_points_for_user(
@@ -356,187 +321,16 @@ def _insert_returning_id(cursor, sql, params):
 
 def init_db():
     """Initialize the database with tables and sample data."""
-    global _rewards_schema_state
-    conn = get_db()
-    cursor = conn.cursor()
+    from dao.schema_dao import SchemaDAO
 
-    if using_postgres():
-        _apply_postgres_schema(conn)
-    else:
-        _create_sqlite_schema(cursor)
-        conn.commit()
-
-    try:
-        schema_status = ensure_rewards_ledger_schema(conn, cursor, commit=True)
-        if schema_status in {"applied", "exists"}:
-            _rewards_schema_state = "ready"
-        elif schema_status == "skipped_schema_off":
-            _rewards_schema_state = "skipped"
-        else:
-            _rewards_schema_state = "runtime_error"
-    except RuntimeError as exc:  # pragma: no cover - controlled by env flag
-        if str(exc) == "intentional demo migration failure":
-            _rewards_schema_state = "forced_fail"
-        else:
-            _rewards_schema_state = "runtime_error"
-            logger.warning("Rewards schema setup failed at startup: %s", exc)
-    except Exception as exc:  # pragma: no cover — demo convenience
-        _rewards_schema_state = "runtime_error"
-        logger.warning("Rewards schema setup failed at startup: %s", exc)
-    logger.info("rewards.rollout.schema state=%s", _rewards_schema_state)
-
-    cursor.execute(_sql("SELECT COUNT(*) FROM users"))
-    if _scalar_from_row(cursor.fetchone()) == 0:
-        create_sample_data(conn)
-
-    conn.close()
+    SchemaDAO().init()
 
 
 def create_sample_data(conn):
     """Create sample users and accounts for demo purposes."""
-    cursor = conn.cursor()
+    from dao.schema_dao import SchemaDAO
 
-    user_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO users (username, email, full_name)
-        VALUES (?, ?, ?)
-        """,
-        ("demo", "jpicard@starfleet.fed", "Jean-Luc Picard"),
-    )
-
-    checking_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO accounts (user_id, account_type, account_number, balance)
-        VALUES (?, ?, ?, ?)
-        """,
-        (user_id, "checking", "QB-CHK-100001", 5420.50),
-    )
-
-    savings_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO accounts (user_id, account_type, account_number, balance)
-        VALUES (?, ?, ?, ?)
-        """,
-        (user_id, "savings", "QB-SAV-200001", 12850.75),
-    )
-
-    credit_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO accounts (user_id, account_type, account_number, balance)
-        VALUES (?, ?, ?, ?)
-        """,
-        (user_id, "credit", "QB-CC-300001", -1234.20),
-    )
-
-    transactions = [
-        (checking_id, "deposit", 1500.00, "Payroll Deposit", "Acme Corp", "completed"),
-        (
-            checking_id,
-            "withdrawal",
-            -45.20,
-            "Coffee Shop",
-            "Blue Bottle Coffee",
-            "completed",
-        ),
-        (
-            checking_id,
-            "withdrawal",
-            -125.00,
-            "Grocery Shopping",
-            "Whole Foods",
-            "completed",
-        ),
-        (checking_id, "withdrawal", -89.99, "Online Purchase", "Amazon", "completed"),
-        (
-            checking_id,
-            "transfer",
-            -500.00,
-            "Transfer to Savings",
-            "Savings Account",
-            "completed",
-        ),
-    ]
-
-    for trans in transactions:
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """),
-            trans,
-        )
-
-    savings_transactions = [
-        (savings_id, "deposit", 5000.00, "Initial Deposit", "Self", "completed"),
-        (
-            savings_id,
-            "transfer",
-            500.00,
-            "Transfer from Checking",
-            "Checking Account",
-            "completed",
-        ),
-        (
-            savings_id,
-            "interest",
-            25.75,
-            "Monthly Interest",
-            "Quantum Bank",
-            "completed",
-        ),
-    ]
-
-    for trans in savings_transactions:
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """),
-            trans,
-        )
-
-    credit_transactions = [
-        (credit_id, "charge", -234.50, "Restaurant", "Chez Pierre", "completed"),
-        (credit_id, "charge", -89.99, "Gas Station", "Shell", "completed"),
-        (credit_id, "charge", -599.99, "Electronics", "Best Buy", "completed"),
-        (
-            credit_id,
-            "payment",
-            500.00,
-            "Credit Card Payment",
-            "Online Payment",
-            "completed",
-        ),
-    ]
-
-    for trans in credit_transactions:
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """),
-            trans,
-        )
-
-    cards = [
-        (checking_id, "debit", "1234", "12/2026"),
-        (credit_id, "credit", "5678", "09/2027"),
-    ]
-
-    for card in cards:
-        cursor.execute(
-            _sql("""
-                INSERT INTO cards (account_id, card_type, card_last4, expiry_date)
-                VALUES (?, ?, ?, ?)
-                """),
-            card,
-        )
-
-    conn.commit()
+    SchemaDAO().seed(conn)
 
 
 def get_user_by_username(username: str) -> dict | None:
@@ -595,32 +389,26 @@ def create_transaction(
     description: str,
     recipient: str = "",
 ) -> int:
-    """Create a new transaction."""
+    """Create a new transaction (wrapper owns connection lifecycle)."""
+    from dao.write_dao import WriteDAO
+
     conn = get_db()
-    cursor = conn.cursor()
-
-    transaction_id = _insert_returning_id(
-        cursor,
-        """
-        INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (account_id, transaction_type, amount, description, recipient),
-    )
-
-    cursor.execute(
-        _sql("""
-            UPDATE accounts
-            SET balance = balance + ?
-            WHERE id = ?
-            """),
-        (amount, account_id),
-    )
-
-    conn.commit()
-    conn.close()
-
-    return transaction_id
+    try:
+        transaction_id = WriteDAO().create_transaction_internal(
+            conn,
+            account_id,
+            transaction_type,
+            amount,
+            description,
+            recipient,
+        )
+        conn.commit()
+        return transaction_id
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def transfer_money(
@@ -630,103 +418,37 @@ def transfer_money(
     description: str = "Transfer",
     acting_user_id: int | None = None,
 ) -> tuple[bool, str]:
-    """Transfer money between accounts."""
+    """Transfer money between accounts (wrapper owns connection lifecycle)."""
+    from dao.write_dao import WriteDAO
+
     if amount <= 0 or not math.isfinite(amount):
         return False, "Invalid amount"
 
     conn = get_db()
-    cursor = conn.cursor()
 
     try:
-        cursor.execute(
-            _sql("SELECT balance, account_number, user_id FROM accounts WHERE id = ?"),
-            (from_account_id,),
+        ok, message = WriteDAO().transfer_internal(
+            conn,
+            from_account_id,
+            to_account_id,
+            amount,
+            description,
+            acting_user_id,
         )
-        from_account = _normalize_row(_row_to_dict(cursor.fetchone()))
-
-        cursor.execute(
-            _sql("SELECT account_number FROM accounts WHERE id = ?"),
-            (to_account_id,),
-        )
-        to_account = _row_to_dict(cursor.fetchone())
-
-        if not from_account or not to_account:
-            conn.close()
-            return False, "Account not found"
-
-        if acting_user_id is not None and from_account["user_id"] != acting_user_id:
-            conn.close()
-            return False, "Forbidden"
-
-        if from_account["balance"] < amount:
-            conn.close()
-            return False, "Insufficient funds"
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-                VALUES (?, ?, ?, ?, ?)
-                """),
-            (
-                from_account_id,
-                "transfer",
-                -amount,
-                description,
-                to_account["account_number"],
-            ),
-        )
-
-        cursor.execute(
-            _sql("UPDATE accounts SET balance = balance - ? WHERE id = ?"),
-            (amount, from_account_id),
-        )
-
-        cursor.execute(
-            _sql("""
-                INSERT INTO transactions (account_id, transaction_type, amount, description, recipient)
-                VALUES (?, ?, ?, ?, ?)
-                """),
-            (
-                to_account_id,
-                "transfer",
-                amount,
-                description,
-                from_account["account_number"],
-            ),
-        )
-
-        cursor.execute(
-            _sql("UPDATE accounts SET balance = balance + ? WHERE id = ?"),
-            (amount, to_account_id),
-        )
-
-        # Demo-only progressive delivery:
-        # writes to rewards_ledger should succeed only after schema is applied.
-        cursor.execute("SAVEPOINT rewards_savepoint")
-        try:
-            try_insert_rewards_points(
-                conn=conn,
-                cursor=cursor,
-                user_id=from_account["user_id"],
-                source_account_id=from_account_id,
-                target_account_id=to_account_id,
-                transfer_amount=amount,
-            )
-            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
-        except Exception:
-            # Load-bearing: on an aborted PG txn, RELEASE SAVEPOINT raises InFailedSqlTransaction;
-            # this except IS the rollback path, not just cleanup — do not collapse this try/except.
-            cursor.execute("ROLLBACK TO SAVEPOINT rewards_savepoint")
-            cursor.execute("RELEASE SAVEPOINT rewards_savepoint")
-
-        conn.commit()
-        conn.close()
-        return True, "Transfer successful"
+        if ok:
+            conn.commit()
+        else:
+            # Validation rejections wrote nothing, so this is a no-op in
+            # practice; it is explicit rather than relying on each driver's
+            # close-without-commit behavior.
+            conn.rollback()
+        return ok, message
 
     except (
         Exception
     ):  # pragma: no cover — defensive; hard to trigger without DB corruption
         logger.exception("transfer_money failed")
         conn.rollback()
-        conn.close()
         return False, "Transfer failed"
+    finally:
+        conn.close()

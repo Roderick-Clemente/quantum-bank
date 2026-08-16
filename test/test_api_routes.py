@@ -334,3 +334,24 @@ def test_api_transfer_rejects_cross_user_source_account(client):
     assert body is not None
     assert body.get("success") is False
     assert body.get("message") == "Forbidden"
+
+
+@pytest.mark.api
+def test_api_404_returns_json_error(client):
+    response = client.get("/api/definitely-not-a-real-endpoint")
+
+    assert response.status_code == 404
+    assert response.content_type.startswith("application/json"), (
+        f"expected application/json 404 body for /api/*, got {response.content_type!r}"
+    )
+    body = response.get_json()
+    assert body is not None
+    assert "error" in body
+
+
+@pytest.mark.api
+def test_non_api_404_preserves_html(client):
+    response = client.get("/definitely-not-a-real-page")
+
+    assert response.status_code == 404
+    assert response.content_type.startswith("text/html")

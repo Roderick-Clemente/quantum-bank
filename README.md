@@ -25,6 +25,18 @@ showcases live, refresh-free Split.io variant switching.
 
 ---
 
+## What this demonstrates
+
+Three capabilities, each mapped to the files that implement it:
+
+| Capability | Guide | Implemented in |
+|------------|-------|----------------|
+| **Feature flags (Harness FME)** — runtime backend switch, progressive rollout, live variant switching | [docs/feature-flags.md](docs/feature-flags.md) | [`split_config.py`](split_config.py), [`db_flags.py`](db_flags.py) |
+| **Database DevOps** — versioned schema, dual-backend data layer, gated & reversible rollout | [docs/db-devops.md](docs/db-devops.md) | [`migrations/`](migrations/), [`dao/`](dao/), [`models.py`](models.py) |
+| **CI/CD (Harness)** — lint + dual-backend test matrix + SCA, then deploy to K8s / Render | [docs/cicd.md](docs/cicd.md) | [`.harness/`](.harness/) |
+
+New here? [`docs/`](docs/) has the full guide index.
+
 ## Why it's interesting
 
 Most demos show feature flags toggling a button color. Quantum Bank uses one to
@@ -162,17 +174,19 @@ pytest -m "api or banking"   # route-level tests
 Markers (see [pytest.ini](pytest.ini)): `public`, `banking`, `api`, `models`.
 
 > [!NOTE]
-> **TODO — add lint tooling.** There is no ruff/black (or pre-commit) config in
-> the repo yet, and no lint step in CI. Add `ruff` + `black` config and a lint
-> stage to the Harness pipeline, then surface a code-style badge here.
+> **Lint** runs in CI: the Harness pipeline executes `ruff check .` and
+> `black --check .` (config in [pyproject.toml](pyproject.toml), versions pinned
+> in the pipeline). Run the same checks locally with `ruff check . && black --check .`.
+> See [docs/cicd.md](docs/cicd.md).
 
 The data-layer tests run against **either** backend when env vars point at Postgres.
 See [docs/LOCAL_POSTGRES.md](docs/LOCAL_POSTGRES.md) for native setup and test commands.
 
 > [!NOTE]
-> **Postgres matrix in CI (CHUNK_3).** Harness runs pytest twice — SQLite (`POSTGRES_DATABASE=off`)
+> **Postgres matrix in CI.** Harness runs pytest twice — SQLite (`POSTGRES_DATABASE=off`)
 > and Background `postgres:16` (`DATABASE_URL` + `POSTGRES_DATABASE=on`) — with separate JUnit
-> reports. See [`.harness/pipelines/rodbank-pipeline-ci-reference.yaml`](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
+> reports. See [docs/cicd.md](docs/cicd.md) and the
+> [pipeline reference](.harness/pipelines/rodbank-pipeline-ci-reference.yaml).
 >
 > This matters because some bugs are **Postgres-only** and a SQLite-only CI run
 > stays green through them — e.g. Postgres returns `created_at` as a `datetime`
